@@ -1,0 +1,95 @@
+/* filepath: c:\Users\Hybris\OneDrive\Belgeler\teams\src\styles\crop-dialog.css */
+/* Custom styles for CropImageDialog component */
+.ReactCrop {
+  position: relative;
+  max-height: 600px;
+  cursor: crosshair;
+  background: #000;
+}
+
+.ReactCrop__crop-selection {
+  border: 1px dashed white;
+  border-radius: 0;
+}
+
+/* Style for square crop with circular preview overlay */
+.rounded-crop .ReactCrop__crop-selection {
+  border-radius: 0; /* Make the crop area square */
+}
+
+.rounded-crop .ReactCrop__crop-selection::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+}
+
+.ReactCrop__rule-of-thirds-h::before,
+.ReactCrop__rule-of-thirds-h::after,
+.ReactCrop__rule-of-thirds-v::before,
+.ReactCrop__rule-of-thirds-v::after {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.crop-slider-container {
+  position: relative;
+  width: 100%;
+  padding: 2rem 5rem;
+  background-color: #2d2d2d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crop-controls {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1rem 0;
+}
+
+.crop-dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.crop-button {
+  padding: 0.5rem 2rem;
+  border-radius: 9999px; /* rounded-full */
+  font-weight: 500;
+  min-width: 140px;
+  text-align: center;
+}
+
+.cancel-button {
+  background-color: #3B82F6; /* blue-500 */
+}
+
+.crop-button-primary {
+  background-color: #27272A; /* gray-800 */
+}
+
+/* Override shadcn Slider styles */
+.crop-slider .slider-track {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.crop-slider .slider-range {
+  background-color: white;
+}
+
+.crop-slider .slider-thumb {
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border: none;
+}
