@@ -1,20 +1,21 @@
+"use server";
+
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import UserCard from "@/schemas/mongoose/UserCard";
-import CardTemplate from "@/schemas/mongoose/Template"; // Template modelini import ediyoruz
-import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 import User from "@/schemas/mongoose/User";
+import UserCard from "@/schemas/mongoose/UserCard";
+import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 import { isValidObjectId } from "mongoose";
 import { getUserIfTeamRoleAllowed } from "@/utils/decorators/team-role.decorator";
 
-export async function PATCH(
+export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const url = new URL(req.url);
     const indexParam = url.searchParams.get("index");
-    const cardIndex = Number(indexParam);
+    const cardIndex = indexParam ? parseInt(indexParam, 10) : 0;
 
     const sessionId = await getUserIdFromToken(req);
     if (!sessionId || !isValidObjectId(sessionId)) {
@@ -25,16 +26,15 @@ export async function PATCH(
     if (!isValidObjectId(userId)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
+
     if (Number.isNaN(cardIndex) || cardIndex < 0) {
       return NextResponse.json(
         { error: "Invalid or missing index query parameter" },
         { status: 400 },
       );
     }
-    await dbConnect();
 
-    const body = await req.json();
-    console.log(body);
+    await dbConnect();
 
     const user = await User.findById(userId);
     if (!user) {
@@ -43,7 +43,7 @@ export async function PATCH(
 
     const userCardArray = Array.isArray(user.userCard) ? user.userCard : [];
 
-    // Try to resolve cardId from the user's mapped `user.userCard` array first.
+    // Try to resolve cardId from mapping first
     let cardIdToUse: any = null;
     if (
       Number.isInteger(cardIndex) &&
@@ -56,7 +56,7 @@ export async function PATCH(
       }
     }
 
-    // Fallback: if we couldn't resolve via mapping, fetch UserCard documents and use that index.
+    // Fallback to DB list
     if (!cardIdToUse) {
       const userCardsFromDb = await UserCard.find({ user: userId }).sort({
         createdAt: 1,
@@ -81,7 +81,6 @@ export async function PATCH(
     }
 
     const userCard = await UserCard.findOne({ _id: cardIdToUse, user: userId });
-
     if (!userCard) {
       return NextResponse.json(
         { error: "UserCard not found" },
@@ -89,7 +88,7 @@ export async function PATCH(
       );
     }
 
-    // Yetki kontrolü
+    // Authorization: owner or allowed team roles
     if (sessionId !== userId) {
       const userWithRole = await getUserIfTeamRoleAllowed(req, [
         "owner",
@@ -107,30 +106,22 @@ export async function PATCH(
       );
     }
 
-    // Eğer body içinde templateId varsa, Template'i buluyoruz
-    if (body.templateId && isValidObjectId(body.templateId)) {
-      const template = await CardTemplate.findById(body.templateId);
-      if (!template) {
-        return NextResponse.json(
-          { error: "Template not found" },
-          { status: 404 },
-        );
-      }
-      // Eğer template bulunduysa, template'in links objesini alıyoruz
-      userCard.links = template.links;
-    } else {
-      userCard.links = body;
+    // Delete the UserCard document
+    await UserCard.deleteOne({ _id: cardIdToUse, user: userId });
+
+    // Update user's mapping: remove any entries referencing this cardId
+    const mappingIndex = userCardArray.findIndex(
+      (ref: any) =>
+        ref && ref.cardId && String(ref.cardId) === String(cardIdToUse),
+    );
+    if (mappingIndex !== -1) {
+      user.userCard.splice(mappingIndex, 1);
+      await user.save();
     }
 
-    // Güncellenmiş UserCard'ı kaydediyoruz
-    await userCard.save();
-
-    return NextResponse.json({
-      message: "Links updated successfully",
-      links: userCard.links,
-    });
+    return NextResponse.json({ message: "UserCard deleted" }, { status: 200 });
   } catch (err) {
-    console.error("Update links error:", err);
+    console.error("Delete card error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

@@ -19,7 +19,7 @@ function getString(formData: FormData, key: string): string | undefined {
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const sessionId = await getUserIdFromToken(req);
@@ -66,8 +66,42 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!isValidObjectId(user.userCard.at(cardIndex)?.cardId)) {
-      return NextResponse.json({ error: "Invalid card ID" }, { status: 400 });
+    const userCardArray = Array.isArray(user.userCard) ? user.userCard : [];
+
+    // Resolve cardId from mapping first, otherwise fallback to DB list
+    let cardIdToUse: any = null;
+    if (
+      Number.isInteger(cardIndex) &&
+      cardIndex >= 0 &&
+      cardIndex < userCardArray.length
+    ) {
+      const cardRef = userCardArray[cardIndex];
+      if (cardRef && cardRef.cardId && isValidObjectId(cardRef.cardId)) {
+        cardIdToUse = cardRef.cardId;
+      }
+    }
+
+    if (!cardIdToUse) {
+      const userCardsFromDb = await UserCard.find({ user: userId }).sort({
+        createdAt: 1,
+      });
+      if (!userCardsFromDb.length) {
+        return NextResponse.json(
+          { error: "User has no cards" },
+          { status: 404 },
+        );
+      }
+      if (
+        Number.isNaN(cardIndex) ||
+        cardIndex < 0 ||
+        cardIndex >= userCardsFromDb.length
+      ) {
+        return NextResponse.json(
+          { error: "Invalid card index" },
+          { status: 400 },
+        );
+      }
+      cardIdToUse = userCardsFromDb[cardIndex]._id;
     }
 
     const validation = UserCardUpdateSchema.safeParse({
@@ -82,21 +116,41 @@ export async function PATCH(
       }));
       return NextResponse.json(
         { error: "Validation failed", details: errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { teamTemplateId, ...updateFields } = validation.data;
 
-    const userCard = await UserCard.findOne({
-      _id: user.userCard.at(cardIndex)?.cardId,
-      user: userId,
-    });
+    const userCard = await UserCard.findOne({ _id: cardIdToUse, user: userId });
     if (!userCard) {
       return NextResponse.json(
         { error: "UserCard not found" },
-        { status: 404 }
+        { status: 404 },
       );
+    }
+
+    // Determine mapping index in user.userCard for this cardId
+    let mappingIndex = -1;
+    if (
+      userCardArray[cardIndex] &&
+      String(userCardArray[cardIndex].cardId) === String(cardIdToUse)
+    ) {
+      mappingIndex = cardIndex;
+    } else {
+      mappingIndex = userCardArray.findIndex(
+        (ref: any) =>
+          ref && ref.cardId && String(ref.cardId) === String(cardIdToUse),
+      );
+    }
+    if (mappingIndex === -1) {
+      user.userCard.push({
+        cardName: userCard.cardName,
+        cardProfileImage: userCard.profilePicture || "/defaultpp.png",
+        cardTeamTemplate: userCard.teamTemplate?.templateId ?? null,
+        cardId: userCard._id,
+      });
+      mappingIndex = user.userCard.length - 1;
     }
 
     if (sessionId !== userId) {
@@ -112,7 +166,7 @@ export async function PATCH(
     if (user.roles.teamRole === "pending" && sessionId !== userId) {
       return NextResponse.json(
         { error: "User is pending and cannot be updated by others" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -121,17 +175,17 @@ export async function PATCH(
       if (!team) {
         return NextResponse.json(
           { error: "User team not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
       const templateExists = team.templates.some(
-        (templateId: string) => templateId.toString() === teamTemplateId
+        (templateId: string) => templateId.toString() === teamTemplateId,
       );
       if (!templateExists) {
         return NextResponse.json(
           { error: "Template not allowed for team" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -139,16 +193,19 @@ export async function PATCH(
       if (!teamTemplate) {
         return NextResponse.json(
           { error: "Template not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
       userCard.teamTemplate.templateId = teamTemplateId;
       userCard.teamTemplate.templateName = teamTemplate.templateName;
-      user.userCard.cardTeamTemplate = teamTemplateId;
-      user.userCard.links = teamTemplate.links;
-      user.userCard.leadForm = teamTemplate.leadForm;
-      user.userCard.profilePicture = teamTemplate.profilePicture;
+      // update mapping entry for this card
+      if (mappingIndex !== -1) {
+        user.userCard[mappingIndex].cardTeamTemplate = teamTemplateId;
+        user.userCard[mappingIndex].cardProfileImage =
+          teamTemplate.profilePicture ||
+          user.userCard[mappingIndex].cardProfileImage;
+      }
       await user.save();
 
       const overwriteFields = [
@@ -199,7 +256,7 @@ export async function PATCH(
           file,
           userId,
           { userCard: userCard.id },
-          "webp"
+          "webp",
         );
         userCard[key] = url;
       }
@@ -216,11 +273,11 @@ export async function PATCH(
       }
     }
 
-    user.userCard.at(cardIndex).cardName = updateFields.cardName;
-    user.userCard.at(cardIndex).cardLayout = updateFields.cardLayout;
-    user.userCard.at(cardIndex).cardProfileImage = userCard.profilePicture;
-    user.userCard.at(cardIndex).call = userCard.call;
-    user.userCard.at(cardIndex).email = userCard.email;
+    user.userCard[mappingIndex].cardName = updateFields.cardName;
+    user.userCard[mappingIndex].cardLayout = updateFields.cardLayout;
+    user.userCard[mappingIndex].cardProfileImage = userCard.profilePicture;
+    user.userCard[mappingIndex].call = userCard.call;
+    user.userCard[mappingIndex].email = userCard.email;
 
     // Yeni: emailData güncelle
     if (emailData.to.length > 0 || emailData.subject || emailData.message) {
@@ -235,7 +292,7 @@ export async function PATCH(
     console.error("UserCard update error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

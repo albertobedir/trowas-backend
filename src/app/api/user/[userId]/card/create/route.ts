@@ -10,13 +10,17 @@ import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 import { isValidObjectId } from "mongoose";
 import { cardBodySchema } from "@/schemas/zod/user";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
     const userId = await getUserIdFromToken(req);
 
     if (!userId || !isValidObjectId(userId)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const json = await req.json();
+    const body = cardBodySchema.parse(json);
+
     await dbConnect();
 
     const user = await User.findById(userId);
@@ -24,48 +28,45 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-     const qrBuffer = await generateQRCodeBuffer(
-      `${process.env.BASE_URL}connect/${user._id}`,
-      "svg"
+    const qrBuffer = await generateQRCodeBuffer(
+      `${process.env.BASE_URL}connect/${user._id}/${Date.now()}`,
+      "svg",
     );
 
     const qrCodePath = await saveBufferFile(
       qrBuffer,
-      user._id,
+      user.id,
       {},
       "svg",
-      "qrCodes"
+      "qrCodes",
     );
 
-    // Kullanıcı kartı oluştur
     const newCard = await UserCard.create({
-      cardName: `${user.name}'s card`,
       user: user._id,
-      template:  {},
-      name: user.name,
-      jobTitle: null,
-      company: null,
-      location: null,
-      bio: null,
-      font: "Baskerville",
-      linkColor: "#000000",
-      cardColor: "#ffffff",
-      matchLinkIconsToTheme: false,
+      cardName: body.cardName ?? `${user.name}'s card`,
+      name: body.name ?? user.name,
+      jobTitle: body.jobTitle ?? null,
+      company: body.company ?? null,
+      location: body.location ?? null,
+      bio: body.bio ?? null,
+      font: body.font ?? "Baskerville",
+      linkColor: body.linkColor ?? "#000000",
+      cardColor: body.cardColor ?? "#ffffff",
+      matchLinkIconsToTheme: body.matchLinkIconsToTheme ?? false,
       profilePicture: "/defaultpp.png",
       coverPhoto: "/defaultcover.jpg",
       companyLogo: "/defaultcompanylogo.png",
-      qrCodeUrl: `${qrCodePath}`,
-      links: [],
+      qrCodeUrl: qrCodePath,
+      links: body.links ?? {},
     });
-
 
     if (!user.userCard) user.userCard = [];
     user.userCard.push({
       cardName: newCard.cardName,
-      cardProfileImage: newCard.profilePicture,
-      cardTeamTemplate: null,
+      cardProfileImage: newCard.profilePicture ?? "/defaultpp.png",
+      cardTeamTemplate: (body as any).teamTemplateId ?? null,
       cardId: newCard._id,
-      jopTitle: newCard.jobTitle,});
+    });
     await user.save();
 
     return NextResponse.json({ userCard: newCard }, { status: 201 });
@@ -74,12 +75,12 @@ export async function GET(req: Request) {
     if (err?.name === "ZodError") {
       return NextResponse.json(
         { error: "Validation failed", details: err.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

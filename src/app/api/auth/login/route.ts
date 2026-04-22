@@ -57,6 +57,8 @@ export async function POST(req: Request) {
     setCookie(response, "access_token", access_token, 15 * 60);
     setCookie(response, "refresh_token", refresh_token, 7 * 24 * 60 * 60);
 
+    console.log("LOGIN AT_SECRET len:", process.env.AT_SECRET?.length);
+
     return response;
   } catch (error) {
     return NextResponse.json(

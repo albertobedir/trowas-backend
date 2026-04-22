@@ -8,16 +8,18 @@ import { isValidObjectId } from "mongoose";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const { userId } = await params;
     const url = new URL(req.url);
 
     const isVip = url.searchParams.get("isVip") === "true";
-    const returnAll = url.searchParams.get("returnAll") === "true";
+    const returnAllParam = url.searchParams.get("returnAll") === "true";
     const indexParam = url.searchParams.get("index");
-    const cardIndex = indexParam ? parseInt(indexParam, 10) : 0;
+    // If index is not provided (null) we should return all cards by default.
+    const shouldReturnAll = returnAllParam || indexParam === null;
+    const cardIndex = indexParam !== null ? parseInt(indexParam, 10) : 0;
 
     await dbConnect();
 
@@ -28,7 +30,7 @@ export async function GET(
       if (!userId || !isValidObjectId(userId)) {
         return NextResponse.json(
           { error: "Geçersiz veya eksik kullanıcı ID'si" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       user = await User.findById(userId);
@@ -37,7 +39,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json(
         { error: "Kullanıcı bulunamadı" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -46,21 +48,21 @@ export async function GET(
     if (!userCards.length) {
       return NextResponse.json(
         { error: "Kullanıcının kartı bulunamadı" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    if (returnAll) {
+    if (shouldReturnAll) {
       return NextResponse.json(
         { userCards, username: user.username },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
-    if (cardIndex < 0 || cardIndex >= userCards.length) {
+    if (isNaN(cardIndex) || cardIndex < 0 || cardIndex >= userCards.length) {
       return NextResponse.json(
-        { error: "Geçersiz kart index'i" },
-        { status: 400 }
+        { error: "Geçersiz veya eksik kart index'i" },
+        { status: 400 },
       );
     }
 
@@ -68,13 +70,13 @@ export async function GET(
 
     return NextResponse.json(
       { userCard: selectedCard, username: user.username },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

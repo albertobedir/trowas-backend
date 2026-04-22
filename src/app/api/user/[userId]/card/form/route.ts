@@ -9,11 +9,11 @@ import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const sessionId = await getUserIdFromToken(req);
-    if (!sessionId || ! isValidObjectId(sessionId)) {
+    if (!sessionId || !isValidObjectId(sessionId)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const url = new URL(req.url);
@@ -28,24 +28,55 @@ export async function PATCH(
 
     const body = await req.json();
 
-     const user = await User.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!isValidObjectId(user.userCard.at(cardIndex)?.cardId)) {
-      return NextResponse.json({ error: "Invalid card ID" }, { status: 400 });
+    const userCardArray = Array.isArray(user.userCard) ? user.userCard : [];
+
+    // Resolve cardId from user mapping first, otherwise fallback to DB list
+    let cardIdToUse: any = null;
+    if (
+      Number.isInteger(cardIndex) &&
+      cardIndex >= 0 &&
+      cardIndex < userCardArray.length
+    ) {
+      const cardRef = userCardArray[cardIndex];
+      if (cardRef && cardRef.cardId && isValidObjectId(cardRef.cardId)) {
+        cardIdToUse = cardRef.cardId;
+      }
     }
 
-    const userCard = await UserCard.findOne({
-      _id:user.userCard.at(cardIndex)?.cardId,
-      user: userId,
-    });
+    if (!cardIdToUse) {
+      const userCardsFromDb = await UserCard.find({ user: userId }).sort({
+        createdAt: 1,
+      });
+      if (!userCardsFromDb.length) {
+        return NextResponse.json(
+          { error: "User has no cards" },
+          { status: 404 },
+        );
+      }
+      if (
+        Number.isNaN(cardIndex) ||
+        cardIndex < 0 ||
+        cardIndex >= userCardsFromDb.length
+      ) {
+        return NextResponse.json(
+          { error: "Invalid card index" },
+          { status: 400 },
+        );
+      }
+      cardIdToUse = userCardsFromDb[cardIndex]._id;
+    }
+
+    const userCard = await UserCard.findOne({ _id: cardIdToUse, user: userId });
 
     if (!userCard) {
       return NextResponse.json(
         { error: "UserCard not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -62,7 +93,7 @@ export async function PATCH(
     if (user.roles.teamRole === "pending" && sessionId !== userId) {
       return NextResponse.json(
         { error: "User is pending and cannot be updated by others" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -72,7 +103,7 @@ export async function PATCH(
       if (!template) {
         return NextResponse.json(
           { error: "Template not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -93,7 +124,7 @@ export async function PATCH(
     console.error("Update lead form error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
