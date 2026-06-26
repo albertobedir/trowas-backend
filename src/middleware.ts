@@ -1,16 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isMarketingRoute } from "@/lib/webflow/marketing-routes";
 
-export function middleware(request: NextRequest) {  // Get the current path
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  // Define public paths that don't require authentication
-  const isPublicPath = path === "/auth/login" || path === "/auth/register" || path.includes("/connect/");
 
+  // Admin routes — separate auth from regular users
+  if (path.startsWith("/admin")) {
+    const adminToken = request.cookies.get("admin_access_token")?.value;
+    const isAdminLoginPage = path === "/admin";
+
+    if (isAdminLoginPage && adminToken) {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
+
+    if (!isAdminLoginPage && !adminToken) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  const isPublicPath =
+    path === "/auth/login" ||
+    path === "/auth/register" ||
+    isMarketingRoute(path) ||
+    path.includes("/connect/");
   // Check for authentication token
   const acces_token = request.cookies.get("access_token")?.value;
   const refresh_token = request.cookies.get("refresh_token")?.value;
   // If not authenticated and trying to access a protected route, redirect to login
- 
+
   if (!isPublicPath && !acces_token) {
     if (refresh_token) {
       return NextResponse.next();
@@ -19,9 +39,6 @@ export function middleware(request: NextRequest) {  // Get the current path
     }
   }
 
-
-
-  
   // If authenticated and trying to access login/register pages, redirect to dashboard
   if (acces_token && (path === "/auth/login" || path === "/auth/register")) {
     return NextResponse.redirect(new URL("/", request.url));
@@ -38,5 +55,5 @@ export const config = {
   // - API routes
   // - Static files (/favicon.ico, /_next/*)
   // - Public assets (/images/*)
-  matcher: ["/((?!api|_next/static|_next/image|images|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|images|favicon.ico|assets).*)"],
 };

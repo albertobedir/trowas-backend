@@ -1,0 +1,113 @@
+.webflow-page {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.webflow-page .page-wrapper {
+  overflow: hidden;
+}
+
+.webflow-page [class*="animated-load-"] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.webflow-page .hero-v2-main,
+.webflow-page .hero-v2-wrap,
+.webflow-page .hero-v2-content,
+.webflow-page .hero-v2-dashboard-wrap {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.webflow-page .cloude-01-wrap,
+.webflow-page .cloude-02-wrap {
+  pointer-events: none;
+}
+
+/* Dashboard CTA — desktop navbar */
+.webflow-page .marketing-dashboard-nav {
+  margin-right: 10px;
+}
+
+.webflow-page .marketing-dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #fff !important;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none !important;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.webflow-page .marketing-dashboard-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(30, 27, 75, 0.28);
+  background: linear-gradient(135deg, #252270 0%, #3730a3 100%);
+}
+
+.webflow-page .marketing-dashboard-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.95;
+}
+
+.webflow-page .marketing-dashboard-button__icon svg {
+  display: block;
+}
+
+/* Mobile-only nav item (hidden on desktop to avoid duplicate) */
+.webflow-page .marketing-dashboard-mobile-item {
+  display: none !important;
+}
+
+.webflow-page .marketing-dashboard-mobile-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.webflow-page .marketing-dashboard-mobile-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media screen and (max-width: 991px) {
+  .webflow-page .marketing-dashboard-nav {
+    display: none !important;
+  }
+
+  .webflow-page .marketing-dashboard-mobile-item {
+    display: list-item !important;
+  }
+}
+
+/* Footer link */
+.webflow-page .marketing-dashboard-footer-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.webflow-page .marketing-dashboard-footer-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.75;
+}
+
+.webflow-page .marketing-dashboard-footer-link__icon svg {
+  width: 14px;
+  height: 14px;
+}

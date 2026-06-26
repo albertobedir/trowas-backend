@@ -12,7 +12,16 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronDown, DeleteIcon, GrabIcon, PlusCircle, RemoveFormatting, Search, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  DeleteIcon,
+  GrabIcon,
+  PlusCircle,
+  RemoveFormatting,
+  Search,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Api } from "@/lib/api";
@@ -21,7 +30,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore } from "@/store/user-store";
-import { useTeamMembersStore } from '@/store/team-members-store';
+import { useTeamMembersStore } from "@/store/team-members-store";
 import {
   Dialog,
   DialogContent,
@@ -34,41 +43,47 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePageLoading } from "@/hooks/use-page-loading";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { SubadminDialog } from "@/components/subadmin-dialog";
 import { LuUser } from "react-icons/lu";
-
 
 // Mock user data for admin selection
 const mockUsers = [
   {
     id: "1",
     name: "Alex Thompson",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358071/avatar-40-02_upqrxi.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358071/avatar-40-02_upqrxi.jpg",
   },
   {
     id: "2",
     name: "Sarah Chen",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358073/avatar-40-01_ij9v7j.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358073/avatar-40-01_ij9v7j.jpg",
   },
   {
     id: "3",
     name: "Maria Garcia",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358072/avatar-40-03_dkeufx.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358072/avatar-40-03_dkeufx.jpg",
   },
   {
     id: "4",
     name: "David Kim",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358070/avatar-40-05_cmz0mg.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358070/avatar-40-05_cmz0mg.jpg",
   },
   {
     id: "5",
     name: "Emily Johnson",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358071/avatar-40-02_upqrxi.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358071/avatar-40-02_upqrxi.jpg",
   },
   {
     id: "6",
     name: "Michael Brown",
-    avatar: "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358073/avatar-40-01_ij9v7j.jpg",
+    avatar:
+      "https://res.cloudinary.com/dlzlfasou/image/upload/v1736358073/avatar-40-01_ij9v7j.jpg",
   },
 ];
 
@@ -136,7 +151,8 @@ export default function SubteamsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const isLoading = usePageLoading();
   const { user, fetchUser, isLoading: isUserLoading } = useUserStore();
-  const { members: teamMembers, fetchMembers: fetchTeamMembers } = useTeamMembersStore();
+  const { members: teamMembers, fetchMembers: fetchTeamMembers } =
+    useTeamMembersStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [selectedSubadmins, setSelectedSubadmins] = useState<string[]>([]);
@@ -149,34 +165,34 @@ export default function SubteamsPage() {
   }, [fetchUser, fetchTeamMembers]);
 
   const toggleSubadmin = (userId: string) => {
-    setSelectedSubadmins(prev =>
+    setSelectedSubadmins((prev) =>
       prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
     );
   };
 
   const handleSaveSubadmins = async () => {
     try {
       const data = new URLSearchParams();
-      data.append('admins', JSON.stringify(selectedSubadmins));
+      data.append("admins", JSON.stringify(selectedSubadmins));
 
       await Api.patch(`/subteam/${currentSubteamId}/update`, data, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
 
       // Update the local state
-      setSubteamlistData(prev =>
-        prev.map(team =>
+      setSubteamlistData((prev) =>
+        prev.map((team) =>
           team._id === currentSubteamId
             ? { ...team, admins: selectedSubadmins }
-            : team
-        )
+            : team,
+        ),
       );
     } catch (error) {
-      console.error('Failed to update subadmins:', error);
+      console.error("Failed to update subadmins:", error);
       // Here you might want to show an error message to the user
     }
   };
@@ -212,28 +228,33 @@ export default function SubteamsPage() {
     fetchSubteamlistData();
   }, [isUserLoading, user]);
 
-
   const router = useRouter();
   const tableCardRef = React.useRef<HTMLDivElement>(null);
 
   const toggleSelectAll = () => {
     if (filteredSubteams === null) return;
     // Check if all visible (filtered) items are selected
-    const visibleItemIds = filteredSubteams.map((item: { _id: string }) => item._id);
-    const allVisibleSelected = visibleItemIds.every(id => selectedItems.includes(id));
+    const visibleItemIds = filteredSubteams.map(
+      (item: { _id: string }) => item._id,
+    );
+    const allVisibleSelected = visibleItemIds.every((id) =>
+      selectedItems.includes(id),
+    );
 
     if (allVisibleSelected) {
       // Deselect all visible items
-      setSelectedItems(prev => prev.filter(id => !visibleItemIds.includes(id)));
+      setSelectedItems((prev) =>
+        prev.filter((id) => !visibleItemIds.includes(id)),
+      );
     } else {
       // Select all visible items (keeping already selected items from other filters)
-      setSelectedItems(prev => [...new Set([...prev, ...visibleItemIds])]);
+      setSelectedItems((prev) => [...new Set([...prev, ...visibleItemIds])]);
     }
   };
 
   const toggleSelectItem = (id: string) => {
     setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -252,11 +273,16 @@ export default function SubteamsPage() {
       return subteamlistData;
     }
 
-    return subteamlistData.filter((subteam) =>
-      subteam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subteam.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return subteamlistData.filter(
+      (subteam) =>
+        subteam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        subteam.description.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [subteamlistData, searchQuery]);
+
+  if (isLoading || isUserLoading) {
+    return <PageSkeleton variant="simple" />;
+  }
 
   return (
     <div className="w-full">
@@ -269,12 +295,15 @@ export default function SubteamsPage() {
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-full">
-                  {user?.roles?.teamRole !== 'member' && (
+                  {user?.roles?.teamRole !== "member" && (
                     <Button
                       size="sm"
                       className="rounded-full flex-1 md:flex-none"
                       onClick={() => {
-                        if (user?.roles?.teamRole === 'manager' || user?.roles?.teamRole === 'owner') {
+                        if (
+                          user?.roles?.teamRole === "manager" ||
+                          user?.roles?.teamRole === "owner"
+                        ) {
                           setIsAddDialogOpen(true);
                         } else {
                           toast("You do not have permission", {
@@ -283,7 +312,7 @@ export default function SubteamsPage() {
                               label: "Undo",
                               onClick: () => console.log("Undo"),
                             },
-                          })
+                          });
                         }
                       }}
                     >
@@ -333,7 +362,7 @@ export default function SubteamsPage() {
                                 headers: {
                                   "Content-Type": "multipart/form-data",
                                 },
-                              }
+                              },
                             );
 
                             if (!response.data) {
@@ -492,7 +521,9 @@ export default function SubteamsPage() {
                                 <Checkbox
                                   checked={
                                     filteredSubteams.length > 0 &&
-                                    filteredSubteams.every(item => selectedItems.includes(item._id))
+                                    filteredSubteams.every((item) =>
+                                      selectedItems.includes(item._id),
+                                    )
                                   }
                                   onCheckedChange={toggleSelectAll}
                                   className="ml-4 data-[state=checked]:bg-black data-[state=checked]:border-black"
@@ -514,110 +545,130 @@ export default function SubteamsPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredSubteams && filteredSubteams.map((item) => (
-                            <motion.tr
-                              key={item._id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -20 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 30,
-                              }}
-                              className="h-[90px] group hover:bg-accent/50 transition-colors"
-                            >
-                              <TableCell>
-                                <div className="flex items-center gap-4 ml-4">
-                                  <Checkbox
-                                    checked={selectedItems.includes(item._id)}
-                                    onCheckedChange={() =>
-                                      toggleSelectItem(item._id)
-                                    }
-                                    className="data-[state=checked]:bg-black data-[state=checked]:border-black transition-all duration-200 group-hover:border-black"
-                                  />
-                                  <div className="flex items-center gap-4">
-                                    <motion.img
-                                      whileHover={{ scale: 1.10 }}
-                                      className="w-14 h-14 rounded-full object-cover"
-                                      src={item.logo}
-                                      width={56}
-                                      height={56}
-                                      alt={item.name}
-                                    />{" "}
-                                    <div
-                                      onClick={() => {
-                                        if (item.admins?.includes(user?._id) || item.owner === user?._id) {
-                                          router.push(`/team/subteams/${item._id}`);
-                                        } else {
-                                          toast("You do not have permission", {
-                                            description: "Please contact your team manager.",
-                                            action: {
-                                              label: "Undo",
-                                              onClick: () => console.log("Undo"),
-                                            },
-                                          })
-                                        }
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <div className="font-medium text-base hover:text-blue-600 transition-colors">
-                                        {item.name}
+                          {filteredSubteams &&
+                            filteredSubteams.map((item) => (
+                              <motion.tr
+                                key={item._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 30,
+                                }}
+                                className="h-[90px] group hover:bg-accent/50 transition-colors"
+                              >
+                                <TableCell>
+                                  <div className="flex items-center gap-4 ml-4">
+                                    <Checkbox
+                                      checked={selectedItems.includes(item._id)}
+                                      onCheckedChange={() =>
+                                        toggleSelectItem(item._id)
+                                      }
+                                      className="data-[state=checked]:bg-black data-[state=checked]:border-black transition-all duration-200 group-hover:border-black"
+                                    />
+                                    <div className="flex items-center gap-4">
+                                      <motion.img
+                                        whileHover={{ scale: 1.1 }}
+                                        className="w-14 h-14 rounded-full object-cover"
+                                        src={item.logo}
+                                        width={56}
+                                        height={56}
+                                        alt={item.name}
+                                      />{" "}
+                                      <div
+                                        onClick={() => {
+                                          if (
+                                            item.admins?.includes(user?._id) ||
+                                            item.owner === user?._id
+                                          ) {
+                                            router.push(
+                                              `/team/subteams/${item._id}`,
+                                            );
+                                          } else {
+                                            toast(
+                                              "You do not have permission",
+                                              {
+                                                description:
+                                                  "Please contact your team manager.",
+                                                action: {
+                                                  label: "Undo",
+                                                  onClick: () =>
+                                                    console.log("Undo"),
+                                                },
+                                              },
+                                            );
+                                          }
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <div className="font-medium text-base hover:text-blue-600 transition-colors">
+                                          {item.name}
+                                        </div>
+                                        <span className="mt-1 text-sm text-muted-foreground">
+                                          {item.description}
+                                        </span>
                                       </div>
-                                      <span className="mt-1 text-sm text-muted-foreground">{item.description}</span>
                                     </div>
                                   </div>
-                                </div>
-                              </TableCell>
+                                </TableCell>
 
-                              <TableCell className="text-sm">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="rounded-full"
-                                  onClick={() => {
-                                    if (user?.roles?.teamRole === 'manager' || user?.roles?.teamRole === 'owner') {
-                                      setCurrentSubteamId(item._id);
-                                      setSelectedSubadmins(item.admins || []);
-                                      setIsSubadminDialogOpen(true);
-                                    } else {
-                                      toast("You dont have permission", {
-                                        description: "Please contact your team manager.",
-                                        action: {
-                                          label: "Undo",
-                                          onClick: () => console.log("Undo"),
-                                        },
-                                      })
-                                    }
-                                  }}
-                                >
-                                  Select Subadmins
-                                </Button>
+                                <TableCell className="text-sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full"
+                                    onClick={() => {
+                                      if (
+                                        user?.roles?.teamRole === "manager" ||
+                                        user?.roles?.teamRole === "owner"
+                                      ) {
+                                        setCurrentSubteamId(item._id);
+                                        setSelectedSubadmins(item.admins || []);
+                                        setIsSubadminDialogOpen(true);
+                                      } else {
+                                        toast("You dont have permission", {
+                                          description:
+                                            "Please contact your team manager.",
+                                          action: {
+                                            label: "Undo",
+                                            onClick: () => console.log("Undo"),
+                                          },
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Select Subadmins
+                                  </Button>
 
-                                <SubadminDialog
-                                  isOpen={isSubadminDialogOpen}
-                                  onOpenChange={setIsSubadminDialogOpen}
-                                  users={teamMembers
-                                    .filter((member: TeamMember) => item.members.includes(member._id))
-                                    .map((member: TeamMember) => ({
-                                      id: member._id,
-                                      name: member.name,
-                                      avatar: member.profileImage || '/defaultpp.png'
-                                    }))}
-                                  selectedSubadmins={selectedSubadmins}
-                                  onToggleSubadmin={toggleSubadmin}
-                                  onSave={handleSaveSubadmins}
-                                />
-                              </TableCell>
-                              <TableCell className="text-right ">
-                                
-                                <span className="inline-flex items-center rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-black/70">
-                                <LuUser className="h-4 w-4 text-muted-foreground mr-2" />
-                                  {item.members.length}
-                                </span>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
+                                  <SubadminDialog
+                                    isOpen={isSubadminDialogOpen}
+                                    onOpenChange={setIsSubadminDialogOpen}
+                                    users={teamMembers
+                                      .filter((member: TeamMember) =>
+                                        item.members.includes(member._id),
+                                      )
+                                      .map((member: TeamMember) => ({
+                                        id: member._id,
+                                        name: member.name,
+                                        avatar:
+                                          member.profileImage ||
+                                          "/defaultpp.png",
+                                      }))}
+                                    selectedSubadmins={selectedSubadmins}
+                                    onToggleSubadmin={toggleSubadmin}
+                                    onSave={handleSaveSubadmins}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-right ">
+                                  <span className="inline-flex items-center rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-black/70">
+                                    <LuUser className="h-4 w-4 text-muted-foreground mr-2" />
+                                    {item.members.length}
+                                  </span>
+                                </TableCell>
+                              </motion.tr>
+                            ))}
                         </TableBody>
                       </Table>
                     </div>
@@ -651,13 +702,43 @@ export default function SubteamsPage() {
 
                         <motion.button
                           whileTap={{ scale: 0.97 }}
+                          onClick={async () => {
+                            try {
+                              if (!user?.team || selectedItems.length === 0)
+                                return;
+
+                              const response = await Api.post(
+                                `/subteam/delete-subteams`,
+                                {
+                                  teamId: user.team,
+                                  subTeamIds: selectedItems,
+                                },
+                              );
+
+                              toast.success(
+                                response.data.message || "Subteams deleted",
+                              );
+
+                              // UI güncelle
+                              setSubteamlistData((prev) =>
+                                prev.filter(
+                                  (item) => !selectedItems.includes(item._id),
+                                ),
+                              );
+
+                              // selection temizle
+                              setSelectedItems([]);
+                            } catch (error) {
+                              console.error(error);
+                              toast.error("Failed to delete subteams");
+                            }
+                          }}
                           className="h-9 px-2.5 ml-3 text-sm font-medium text-red-500 hover:text-white hover:bg-white/20 whitespace-nowrap transition-all duration-200 flex items-center gap-2 rounded-md"
                         >
                           <DeleteIcon className="h-[15px] text-red-500 w-[15px] -translate-y-[0.5px]" />
                           Remove
                         </motion.button>
                       </div>
-
 
                       <motion.button
                         whileHover={{ scale: 1.05, rotate: 90 }}
@@ -672,8 +753,6 @@ export default function SubteamsPage() {
                       >
                         <X className="h-5 w-5" />
                       </motion.button>
-
-
                     </div>
                   </motion.div>
                 )}

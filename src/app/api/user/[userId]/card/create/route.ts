@@ -7,15 +7,30 @@ import UserCard from "@/schemas/mongoose/UserCard";
 import { generateQRCodeBuffer } from "@/utils/generate-qr-code";
 import { saveBufferFile } from "@/utils/upload/save-buffer";
 import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
+import { isAdminFromRequest } from "@/utils/decorators/admin-decorator";
 import { isValidObjectId } from "mongoose";
 import { cardBodySchema } from "@/schemas/zod/user";
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ userId: string }> },
+) {
   try {
-    const userId = await getUserIdFromToken(req);
+    const isAdmin = await isAdminFromRequest(req);
+    const { userId: paramUserId } = await params;
+    const sessionUserId = isAdmin ? null : await getUserIdFromToken(req);
 
-    if (!userId || !isValidObjectId(userId)) {
+    if (
+      !isAdmin &&
+      (!sessionUserId || !isValidObjectId(sessionUserId))
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const targetUserId = isAdmin ? paramUserId : sessionUserId!;
+
+    if (!isValidObjectId(targetUserId)) {
+      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     const json = await req.json();
@@ -23,13 +38,15 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
-    const user = await User.findById(userId);
+    const user = await User.findById(targetUserId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const cardIndex = user.userCard?.length || 0;
+
     const qrBuffer = await generateQRCodeBuffer(
-      `${process.env.BASE_URL}connect/${user._id}/${Date.now()}`,
+      `${process.env.BASE_URL}connect/${user._id}?index=${cardIndex}`,
       "svg",
     );
 
@@ -57,7 +74,7 @@ export async function POST(req: Request) {
       coverPhoto: "/defaultcover.jpg",
       companyLogo: "/defaultcompanylogo.png",
       qrCodeUrl: qrCodePath,
-      links: body.links ?? {},
+      links: [],
     });
 
     if (!user.userCard) user.userCard = [];

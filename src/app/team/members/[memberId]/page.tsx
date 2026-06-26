@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  usePathname,
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { CropImageDialog } from "@/components/ui/CropImageDialog";
 import { useUserStore } from "@/store/user-store";
@@ -54,19 +59,17 @@ import {
   AtSign,
   ArrowUp,
   ArrowDown,
-} 
-from "lucide-react";
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} 
-from "@/components/ui/popover";
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import { Api } from "@/lib/api";
 import {
   Dialog,
@@ -94,12 +97,9 @@ import { UserCardUpdateSchema } from "@/schemas/zod/user";
 import { TemplateSelectionDialog } from "@/components/ui/template-selection-dialog";
 import { error } from "console";
 
-import {
-  Eye,
-  LayoutGrid,
-  PlusCircle
-} from "lucide-react";
+import { Eye, LayoutGrid, PlusCircle } from "lucide-react";
 import { QrCodePreview, QrCodeView } from "@/components/qr-code";
+import { useCardEditorMode } from "@/contexts/card-editor-mode";
 
 const MemberDetailPage = () => {
   const [emailSubject, setEmailSubject] = useState("");
@@ -108,20 +108,37 @@ const MemberDetailPage = () => {
   const [emailAfterHour, setEmailAfterHour] = useState("");
   const [emailAfterMinute, setEmailAfterMinute] = useState("");
   const [autofollowisactive, setAutofollowisactive] = useState(false);
+  const cardEditorMode = useCardEditorMode();
+  const isAdminEditor = cardEditorMode?.isAdmin ?? false;
   const { user, fetchUser, isLoading: isUserLoading } = useUserStore();
   const pathname = usePathname();
   const params = useParams();
-  useEffect(() => {
-    // Fetch user data from the global store if not already loaded
-    fetchUser();
-  }, [fetchUser]);
-  // Access memberId from useParams hook
-  const memberId = params.memberId as string;
+  const memberId = (cardEditorMode?.memberId || params.memberId) as string;
   const searchParams = useSearchParams();
-  const index = searchParams.get('index');
-  
+  const index = cardEditorMode?.cardIndex ?? searchParams.get("index");
+  const backHref = isAdminEditor
+    ? cardEditorMode?.backHref || `/admin/dashboard/users/${memberId}/cards`
+    : "/team/members";
+  const [adminTargetUser, setAdminTargetUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isAdminEditor) {
+      fetchUser();
+    }
+  }, [fetchUser, isAdminEditor]);
+
+  useEffect(() => {
+    if (!isAdminEditor || !memberId) return;
+    fetch(`/api/admin/users/${memberId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(setAdminTargetUser)
+      .catch(console.error);
+  }, [isAdminEditor, memberId]);
+
+  const cardOwner = isAdminEditor ? adminTargetUser : user;
+
   const { data, isPending, isError } = useQuery({
-    queryKey: ["member", memberId],
+    queryKey: ["member", memberId, index, isAdminEditor],
     queryFn: async () => {
       if (memberId) {
         const response = await Api.get(`/user/${memberId}/card?index=${index}`);
@@ -130,7 +147,7 @@ const MemberDetailPage = () => {
       }
       return null;
     },
-    enabled: !!memberId,
+    enabled: !!memberId && index !== null && index !== undefined,
     retry: false,
   });
   useEffect(() => {
@@ -147,11 +164,13 @@ const MemberDetailPage = () => {
   useEffect(() => {
     const fetchEmailSignature = async () => {
       try {
-        const response = await Api.get(`/email-signature/${user?.emailSignature}`);
+        const response = await Api.get(
+          `/email-signature/${user?.emailSignature}`,
+        );
         console.log("Email Signature Data:", response.data);
         setEmailSignatureData(response.data);
       } catch (error) {
-        console.error('Error fetching email signature:', error);
+        console.error("Error fetching email signature:", error);
       }
     };
 
@@ -188,33 +207,32 @@ const MemberDetailPage = () => {
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [currentTemplateId, setCurrentTemplateId] = useState("template-3");
   const [matchLinkToTheme, setMatchLinkToTheme] = useState(true);
-  const userperm = user?.permissions.subTeamPermission || 0;
+  const userperm = isAdminEditor ? "0" : user?.permissions.subTeamPermission || 0;
 
   // Colors for theme and links
-  const colorOptions = useMemo(() => [
-    "#3B82F6",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#EC4899",
-  ], []);
+  const colorOptions = useMemo(
+    () => ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"],
+    [],
+  );
   const [selectedCardTheme, setSelectedCardTheme] = useState(colorOptions[0]);
   const [selectedLinkColor, setSelectedLinkColor] = useState(colorOptions[0]);
-  
+
   // Email signature download state
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   // QR Code color options
-  const qrColorOptions = useMemo(() => [
-    { name: "black", value: "#000000" },
-    { name: "blue", value: "#3B82F6" },
-    { name: "red", value: "#EF4444" },
-    { name: "green", value: "#10B981" },
-    { name: "purple", value: "#8B5CF6" },
-    { name: "orange", value: "#F97316" },
-    { name: "pink", value: "#EC4899" },
-  ], []);
+  const qrColorOptions = useMemo(
+    () => [
+      { name: "black", value: "#000000" },
+      { name: "blue", value: "#3B82F6" },
+      { name: "red", value: "#EF4444" },
+      { name: "green", value: "#10B981" },
+      { name: "purple", value: "#8B5CF6" },
+      { name: "orange", value: "#F97316" },
+      { name: "pink", value: "#EC4899" },
+    ],
+    [],
+  );
 
   const [selectedQrColor, setSelectedQrColor] = useState("black");
 
@@ -226,28 +244,28 @@ const MemberDetailPage = () => {
     const generateQrCode = async () => {
       try {
         if (!memberId) return;
-        
+
         const profileUrl = `${window.location.origin}/profile/${memberId}`;
-        
+
         // Move getQrColorValue inside useEffect
         const getQrColorValue = (colorName: string) => {
-          const color = qrColorOptions.find(c => c.name === colorName);
+          const color = qrColorOptions.find((c) => c.name === colorName);
           return color ? color.value : "#000000";
         };
-        
+
         const colorHex = getQrColorValue(selectedQrColor);
-        
+
         // Generate SVG string
         const svgString = await QRCode.toString(profileUrl, {
-          type: 'svg',
+          type: "svg",
           width: 50,
           margin: 1,
           color: {
             dark: colorHex,
-            light: "#FFFFFF"
-          }
+            light: "#FFFFFF",
+          },
         });
-        
+
         setQrCodeSvg(svgString);
       } catch (error) {
         console.error("Error generating QR code:", error);
@@ -255,7 +273,7 @@ const MemberDetailPage = () => {
     };
 
     generateQrCode();
-  }, [memberId, selectedQrColor,qrColorOptions]);
+  }, [memberId, selectedQrColor, qrColorOptions]);
 
   // Layout and font selections
   const [selectedFont, setSelectedFont] = useState("Inter");
@@ -272,16 +290,14 @@ const MemberDetailPage = () => {
 
   // Connect button text
   const [connectButtonText, setConnectButtonText] = useState(
-    defaultConnectButtonText
+    defaultConnectButtonText,
   );
 
   // Form disclaimer text
   const [formDisclaimer, setFormDisclaimer] = useState(defaultFormDisclaimer);
 
   // Follow-up email settings
-  
 
-  
   // Refs for input fields
   const subjectInputRef = useRef<HTMLInputElement>(null);
   const messageTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -327,11 +343,11 @@ const MemberDetailPage = () => {
   const updateHiddenField = (id: number, updates: Partial<HiddenFieldType>) => {
     setHiddenFields(
       hiddenFields.map((field) =>
-        field.id === id ? { ...field, ...updates } : field
-      )
+        field.id === id ? { ...field, ...updates } : field,
+      ),
     );
   };
-  const {push} = useRouter();
+  const { push } = useRouter();
   // Function to handle saving lead capture form data
   const handleLeadCaptureFormSave = () => {
     try {
@@ -340,11 +356,11 @@ const MemberDetailPage = () => {
       // Track removed fields by comparing with initial fields
       const initialFieldIds =
         data?.data?.userCard?.leadCaptureFields?.map(
-          (field: any) => field.id
+          (field: any) => field.id,
         ) || [];
 
       const removedFieldIds = initialFieldIds.filter(
-        (id: number) => !leadCaptureFields.some((field) => field.id === id)
+        (id: number) => !leadCaptureFields.some((field) => field.id === id),
       );
 
       // Create detailed fields data including required status
@@ -391,7 +407,7 @@ const MemberDetailPage = () => {
           name: f.name,
           type: f.type,
           required: f.required,
-        }))
+        })),
       );
 
       // Show hidden fields in table format
@@ -401,7 +417,6 @@ const MemberDetailPage = () => {
       }
 
       // Use alert for debugging as well
-
 
       // Show success notification
       if (typeof showNotification === "function") {
@@ -424,7 +439,10 @@ const MemberDetailPage = () => {
 
   const handleFileCompanyClick = () => {
     if (hasPermission(BigInt(userperm), BitPerms.companyLogo)) {
-      showNotification("You don't have permission to edit this field.", "error");
+      showNotification(
+        "You don't have permission to edit this field.",
+        "error",
+      );
       return;
     }
     fileInputRef.current?.click();
@@ -438,24 +456,24 @@ const MemberDetailPage = () => {
   // Function to process uploaded virtual background image to 9:16 aspect ratio
   const processVirtualBackgroundImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      const img = document.createElement('img');
-      
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d")!;
+      const img = document.createElement("img");
+
       img.onload = () => {
         // Set canvas dimensions to 9:16 aspect ratio
-        const targetWidth = 360;  // 9 units
+        const targetWidth = 360; // 9 units
         const targetHeight = 640; // 16 units
-        
+
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        
+
         // Calculate dimensions to maintain aspect ratio while filling canvas
         const imgAspectRatio = img.width / img.height;
         const targetAspectRatio = targetWidth / targetHeight;
-        
+
         let drawWidth, drawHeight, drawX, drawY;
-        
+
         if (imgAspectRatio > targetAspectRatio) {
           // Image is wider than target ratio
           drawHeight = targetHeight;
@@ -469,23 +487,27 @@ const MemberDetailPage = () => {
           drawX = 0;
           drawY = (targetHeight - drawHeight) / 2;
         }
-        
+
         // Fill background with black
-        ctx.fillStyle = '#000000';
+        ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, targetWidth, targetHeight);
-        
+
         // Draw the image
         ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-        
+
         // Convert canvas to blob and create URL
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            resolve(url);
-          }
-        }, 'image/jpeg', 0.9);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              resolve(url);
+            }
+          },
+          "image/jpeg",
+          0.9,
+        );
       };
-      
+
       img.src = URL.createObjectURL(file);
     });
   };
@@ -494,7 +516,7 @@ const MemberDetailPage = () => {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [currentEditingLink, setCurrentEditingLink] = useState<string | null>(
-    null
+    null,
   );
   const [linkUsername, setLinkUsername] = useState("");
   const [linkTitle, setLinkTitle] = useState("");
@@ -517,13 +539,20 @@ const MemberDetailPage = () => {
 
   const getHueRotateValue = (color: string): string => {
     switch (color) {
-      case "red": return "0deg";
-      case "orange": return "30deg";
-      case "green": return "120deg";
-      case "blue": return "240deg";
-      case "purple": return "270deg";
-      case "white": return "0deg"; // For white, we'll just use the invert filter
-      default: return "0deg";
+      case "red":
+        return "0deg";
+      case "orange":
+        return "30deg";
+      case "green":
+        return "120deg";
+      case "blue":
+        return "240deg";
+      case "purple":
+        return "270deg";
+      case "white":
+        return "0deg"; // For white, we'll just use the invert filter
+      default:
+        return "0deg";
     }
   };
   const [condensedView, setCondensedView] = useState<boolean>(false);
@@ -534,7 +563,7 @@ const MemberDetailPage = () => {
   const [showLocation, setShowLocation] = useState<boolean>(true);
   const [selectedVirtualBackground, setSelectedVirtualBackground] =
     useState<string>("/virtualBackground/1.jpeg");
-  
+
   // Virtual background upload state
   const virtualBackgroundInputRef = useRef<HTMLInputElement>(null);
 
@@ -564,7 +593,7 @@ const MemberDetailPage = () => {
   // Function to show notification
   const showNotification = (
     message: string,
-    type: "success" | "error" = "success"
+    type: "success" | "error" = "success",
   ) => {
     setNotification({
       visible: true,
@@ -588,7 +617,7 @@ const MemberDetailPage = () => {
       { id: 5, name: "Company", required: false, type: "text" },
       { id: 6, name: "Note", required: false, type: "text" },
       { id: 7, name: "File", required: false, type: "file" },
-    ]
+    ],
   );
 
   // Track the form dialog open state
@@ -625,8 +654,8 @@ const MemberDetailPage = () => {
   const updateField = (id: number, updates: Partial<FieldType>) => {
     setLeadCaptureFields(
       leadCaptureFields.map((field) =>
-        field.id === id ? { ...field, ...updates } : field
-      )
+        field.id === id ? { ...field, ...updates } : field,
+      ),
     );
   };
 
@@ -635,7 +664,7 @@ const MemberDetailPage = () => {
   const [tempImageSrc, setTempImageSrc] = useState<string>("");
   const [tempImageFile, setTempImageFile] = useState<File | null>(null);
   const [cropType, setCropType] = useState<"cover" | "profile" | "logo">(
-    "cover"
+    "cover",
   );
 
   // Handle when crop is complete
@@ -753,10 +782,10 @@ const MemberDetailPage = () => {
           setIsLeadCaptureEnabled(leadForm.settings.isEnabled || false);
           setFormHeader(leadForm.settings.formHeader || defaultFormHeader);
           setConnectButtonText(
-            leadForm.settings.connectButtonText || defaultConnectButtonText
+            leadForm.settings.connectButtonText || defaultConnectButtonText,
           );
           setFormDisclaimer(
-            leadForm.settings.formDisclaimer || defaultFormDisclaimer
+            leadForm.settings.formDisclaimer || defaultFormDisclaimer,
           );
         }
 
@@ -834,7 +863,10 @@ const MemberDetailPage = () => {
     console.log("Saving links data:", linksData);
 
     // Send the data to the API
-    Api.patch(`/user/${memberId}/card/links?index=${index}`, JSON.stringify(linksData))
+    Api.patch(
+      `/user/${memberId}/card/links?index=${index}`,
+      JSON.stringify(linksData),
+    )
       .then((response) => {
         console.log("API Response:", response);
         showNotification("Links updated successfully", "success");
@@ -844,12 +876,28 @@ const MemberDetailPage = () => {
         showNotification("Failed to update links", "error");
       });
   };
+  // const handleCreateNewCard = () => {
+  //   Api.get(`/user/${memberId}/card/create`)
+  //     .then((response) => {
+  //       console.log("API Response:", response);
+  //       showNotification("New card created successfully", "success");
+  //       window.location.href = `/team/members/${memberId}?index=${user?.userCard.length}`;
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error creating new card:", error);
+  //       showNotification("Failed to create new card", "error");
+  //     });
+  // };
   const handleCreateNewCard = () => {
-    Api.get(`/user/${memberId}/card/create`)
+    Api.post(`/user/${memberId}/card/create`, {})
       .then((response) => {
         console.log("API Response:", response);
         showNotification("New card created successfully", "success");
-        window.location.href = `/team/members/${memberId}?index=${user?.userCard.length}`;
+
+        const nextIndex = cardOwner?.userCard?.length ?? 0;
+        window.location.href = isAdminEditor
+          ? `/admin/dashboard/users/${memberId}/cards/${nextIndex}`
+          : `/team/members/${memberId}?index=${nextIndex}`;
       })
       .catch((error) => {
         console.error("Error creating new card:", error);
@@ -899,7 +947,7 @@ const MemberDetailPage = () => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       if (response && response.status === 200) {
@@ -912,7 +960,7 @@ const MemberDetailPage = () => {
       alert("An error occurred while saving your changes. Please try again.");
     }
   };
-  const cardLayoutLiv = getValues('cardLayout');
+  const cardLayoutLiv = getValues("cardLayout");
   const navItems = [
     {
       name: "About",
@@ -1022,13 +1070,14 @@ const MemberDetailPage = () => {
                                 <button
                                   key={layout}
                                   type="button"
-                                  className={`w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors ${field.value === layout ? "bg-slate-100" : ""
-                                    }`}
+                                  className={`w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors ${
+                                    field.value === layout ? "bg-slate-100" : ""
+                                  }`}
                                   onClick={() => field.onChange(layout)}
                                 >
                                   {layout}
                                 </button>
-                              )
+                              ),
                             )}
                           </div>
                         </PopoverContent>
@@ -1058,7 +1107,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1066,7 +1115,7 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Profile picture selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
@@ -1094,7 +1143,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1102,7 +1151,7 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Profile picture selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
@@ -1126,7 +1175,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1134,7 +1183,7 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Cover photo selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
@@ -1167,7 +1216,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1175,7 +1224,7 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Cover photo selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
@@ -1200,7 +1249,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1208,11 +1257,14 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Company logo selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
-                      disabled={hasPermission(BigInt(userperm), BitPerms.companyLogo)}
+                      disabled={hasPermission(
+                        BigInt(userperm),
+                        BitPerms.companyLogo,
+                      )}
                     />
                     <div className="w-[90px] h-[90px] rounded-full bg-white border border-slate-200 relative flex items-center justify-center overflow-hidden p-2">
                       <Image
@@ -1224,11 +1276,17 @@ const MemberDetailPage = () => {
                         onClick={() => handleFileCompanyClick}
                       />
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                        <Upload onClick={() => handleFileCompanyClick} className="h-6 w-6 text-white" />
+                        <Upload
+                          onClick={() => handleFileCompanyClick}
+                          className="h-6 w-6 text-white"
+                        />
                       </div>
                     </div>
                   </label>{" "}
-                  <label onClick={handleFileCompanyClick} className="text-xs text-blue-600 font-medium cursor-pointer">
+                  <label
+                    onClick={handleFileCompanyClick}
+                    className="text-xs text-blue-600 font-medium cursor-pointer"
+                  >
                     <input
                       type="file"
                       accept="image/*"
@@ -1237,7 +1295,7 @@ const MemberDetailPage = () => {
                         if (e.target.files && e.target.files[0]) {
                           // Create a URL for the selected file to display the preview
                           const fileUrl = URL.createObjectURL(
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                           setTempImageSrc(fileUrl);
                           setTempImageFile(e.target.files[0]);
@@ -1245,11 +1303,14 @@ const MemberDetailPage = () => {
                           setIsCropperOpen(true);
                           console.log(
                             "Company logo selected for cropping:",
-                            e.target.files[0]
+                            e.target.files[0],
                           );
                         }
                       }}
-                      disabled={hasPermission(BigInt(userperm), BitPerms.companyLogo)}
+                      disabled={hasPermission(
+                        BigInt(userperm),
+                        BitPerms.companyLogo,
+                      )}
                     />
                     Change Logo
                   </label>
@@ -1272,11 +1333,16 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter name"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.name)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.name,
+                        )}
                         onClick={() => {
                           if (hasPermission(BigInt(userperm), BitPerms.name)) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1295,11 +1361,18 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter location"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.location)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.location,
+                        )}
                         onClick={() => {
-                          if (hasPermission(BigInt(userperm), BitPerms.location)) {
+                          if (
+                            hasPermission(BigInt(userperm), BitPerms.location)
+                          ) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1321,11 +1394,18 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none  read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter job title"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.jobTitle)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.jobTitle,
+                        )}
                         onClick={() => {
-                          if (hasPermission(BigInt(userperm), BitPerms.jobTitle)) {
+                          if (
+                            hasPermission(BigInt(userperm), BitPerms.jobTitle)
+                          ) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1344,11 +1424,18 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none  read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter company name"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.company)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.company,
+                        )}
                         onClick={() => {
-                          if (hasPermission(BigInt(userperm), BitPerms.company)) {
+                          if (
+                            hasPermission(BigInt(userperm), BitPerms.company)
+                          ) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1370,11 +1457,16 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none  read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter phone number"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.call)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.call,
+                        )}
                         onClick={() => {
                           if (hasPermission(BigInt(userperm), BitPerms.call)) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1393,11 +1485,16 @@ const MemberDetailPage = () => {
                         className="w-full px-3 py-3 rounded-[10px] bg-[#F7F7F7] text-sm font-normal focus:outline-none  read-only:bg-gray-100 read-only:text-gray-500"
                         placeholder="Enter email address"
                         {...field}
-                        readOnly={hasPermission(BigInt(userperm), BitPerms.email)}
+                        readOnly={hasPermission(
+                          BigInt(userperm),
+                          BitPerms.email,
+                        )}
                         onClick={() => {
                           if (hasPermission(BigInt(userperm), BitPerms.email)) {
                             showNotification(
-                              "You don't have permission to edit this field.", "error");
+                              "You don't have permission to edit this field.",
+                              "error",
+                            );
                           }
                         }}
                       />
@@ -1421,7 +1518,9 @@ const MemberDetailPage = () => {
                       onClick={() => {
                         if (hasPermission(BigInt(userperm), BitPerms.bio)) {
                           showNotification(
-                            "You don't have permission to edit this field.", "error");
+                            "You don't have permission to edit this field.",
+                            "error",
+                          );
                         }
                       }}
                     />
@@ -1448,7 +1547,10 @@ const MemberDetailPage = () => {
                           onChange={() => {
                             const scrollPosition = window.scrollY;
                             setSelectedCardTheme("transparent");
-                            setTimeout(() => window.scrollTo(0, scrollPosition), 0);
+                            setTimeout(
+                              () => window.scrollTo(0, scrollPosition),
+                              0,
+                            );
                           }}
                           className="sr-only"
                         />
@@ -1459,7 +1561,11 @@ const MemberDetailPage = () => {
                               initial={{ scale: 0.8, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               exit={{ scale: 1.2, opacity: 0 }}
-                              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 25,
+                              }}
                             />
                           )}
                         </div>
@@ -1476,7 +1582,10 @@ const MemberDetailPage = () => {
                             onChange={() => {
                               const scrollPosition = window.scrollY;
                               setSelectedCardTheme(color);
-                              setTimeout(() => window.scrollTo(0, scrollPosition), 0);
+                              setTimeout(
+                                () => window.scrollTo(0, scrollPosition),
+                                0,
+                              );
                             }}
                             className="sr-only"
                           />
@@ -1485,7 +1594,11 @@ const MemberDetailPage = () => {
                             style={{ backgroundColor: color }}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 17,
+                            }}
                           >
                             {selectedCardTheme === color && (
                               <motion.div
@@ -1493,7 +1606,11 @@ const MemberDetailPage = () => {
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 1.2, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 25,
+                                }}
                               />
                             )}
                           </motion.div>
@@ -1509,20 +1626,23 @@ const MemberDetailPage = () => {
                             const customColor = e.target.value;
                             const scrollPosition = window.scrollY;
                             setSelectedCardTheme(customColor);
-                            setTimeout(() => window.scrollTo(0, scrollPosition), 0);
+                            setTimeout(
+                              () => window.scrollTo(0, scrollPosition),
+                              0,
+                            );
                           }}
                           aria-label="Custom color"
                         />
                         <div
                           className="h-full w-full flex justify-center items-center rounded-full relative"
-                          style={{ border: `5px solid ${selectedCardTheme}` }}>
+                          style={{ border: `5px solid ${selectedCardTheme}` }}
+                        >
                           <Plus className="h-2.5 w-2.5"></Plus>
                         </div>
                       </label>
                     </div>
                   </div>
                 </div>
-
                 {/* Spacer */}
                 <div className=""></div>
                 {/* Link Color */}
@@ -1547,7 +1667,7 @@ const MemberDetailPage = () => {
                               setSelectedLinkColor("transparent");
                               setTimeout(
                                 () => window.scrollTo(0, scrollPosition),
-                                0
+                                0,
                               );
                             }}
                             className="sr-only"
@@ -1593,7 +1713,7 @@ const MemberDetailPage = () => {
                                 setSelectedLinkColor(color);
                                 setTimeout(
                                   () => window.scrollTo(0, scrollPosition),
-                                  0
+                                  0,
                                 );
                               }}
                               className="sr-only"
@@ -1634,13 +1754,17 @@ const MemberDetailPage = () => {
                               const customColor = e.target.value;
                               const scrollPosition = window.scrollY;
                               setSelectedLinkColor(customColor);
-                              setTimeout(() => window.scrollTo(0, scrollPosition), 0);
+                              setTimeout(
+                                () => window.scrollTo(0, scrollPosition),
+                                0,
+                              );
                             }}
                             aria-label="Custom link color"
                           />
                           <div
                             className="h-full w-full flex justify-center items-center rounded-full relative"
-                            style={{ border: `5px solid ${selectedLinkColor}` }}>
+                            style={{ border: `5px solid ${selectedLinkColor}` }}
+                          >
                             <Plus className="h-2.5 w-2.5"></Plus>
                           </div>
                         </label>
@@ -1663,7 +1787,7 @@ const MemberDetailPage = () => {
                         className="peer sr-only"
                         id="match-theme"
                         checked={matchLinkToTheme}
-                        onChange={() => { }} // Needed to avoid React warning about controlled components
+                        onChange={() => {}} // Needed to avoid React warning about controlled components
                       />
                       <div className="h-5 w-9 rounded-full bg-gray-300 peer-checked:bg-black after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-4"></div>
                       <label htmlFor="match-theme" className="sr-only">
@@ -2035,10 +2159,18 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = subjectInputRef.current?.selectionStart || emailSubject.length;
-                          const beforeCursor = emailSubject.substring(0, cursorPosition);
-                          const afterCursor = emailSubject.substring(cursorPosition);
-                          setEmailSubject(beforeCursor + "{Lead's Full Name}" + afterCursor);
+                          const cursorPosition =
+                            subjectInputRef.current?.selectionStart ||
+                            emailSubject.length;
+                          const beforeCursor = emailSubject.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailSubject.substring(cursorPosition);
+                          setEmailSubject(
+                            beforeCursor + "{Lead's Full Name}" + afterCursor,
+                          );
                         }}
                       >
                         Lead&apos;s Full Name
@@ -2048,10 +2180,20 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = subjectInputRef.current?.selectionStart || emailSubject.length;
-                          const beforeCursor = emailSubject.substring(0, cursorPosition);
-                          const afterCursor = emailSubject.substring(cursorPosition);
-                          setEmailSubject(beforeCursor + "{My Digital Business Card URL}" + afterCursor);
+                          const cursorPosition =
+                            subjectInputRef.current?.selectionStart ||
+                            emailSubject.length;
+                          const beforeCursor = emailSubject.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailSubject.substring(cursorPosition);
+                          setEmailSubject(
+                            beforeCursor +
+                              "{My Digital Business Card URL}" +
+                              afterCursor,
+                          );
                         }}
                       >
                         My digital business card URL
@@ -2061,10 +2203,18 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = subjectInputRef.current?.selectionStart || emailSubject.length;
-                          const beforeCursor = emailSubject.substring(0, cursorPosition);
-                          const afterCursor = emailSubject.substring(cursorPosition);
-                          setEmailSubject(beforeCursor + "{Popl User's Name}" + afterCursor);
+                          const cursorPosition =
+                            subjectInputRef.current?.selectionStart ||
+                            emailSubject.length;
+                          const beforeCursor = emailSubject.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailSubject.substring(cursorPosition);
+                          setEmailSubject(
+                            beforeCursor + "{Popl User's Name}" + afterCursor,
+                          );
                         }}
                       >
                         Popl User&apos;s Name
@@ -2103,10 +2253,18 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = messageTextareaRef.current?.selectionStart || emailBody.length;
-                          const beforeCursor = emailBody.substring(0, cursorPosition);
-                          const afterCursor = emailBody.substring(cursorPosition);
-                          setEmailBody(beforeCursor + "{Lead's Full Name}" + afterCursor);
+                          const cursorPosition =
+                            messageTextareaRef.current?.selectionStart ||
+                            emailBody.length;
+                          const beforeCursor = emailBody.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailBody.substring(cursorPosition);
+                          setEmailBody(
+                            beforeCursor + "{Lead's Full Name}" + afterCursor,
+                          );
                         }}
                       >
                         Lead&apos;s Full Name
@@ -2116,10 +2274,20 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = messageTextareaRef.current?.selectionStart || emailBody.length;
-                          const beforeCursor = emailBody.substring(0, cursorPosition);
-                          const afterCursor = emailBody.substring(cursorPosition);
-                          setEmailBody(beforeCursor + "{My Digital Business Card URL}" + afterCursor);
+                          const cursorPosition =
+                            messageTextareaRef.current?.selectionStart ||
+                            emailBody.length;
+                          const beforeCursor = emailBody.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailBody.substring(cursorPosition);
+                          setEmailBody(
+                            beforeCursor +
+                              "{My Digital Business Card URL}" +
+                              afterCursor,
+                          );
                         }}
                       >
                         My digital business card URL
@@ -2129,10 +2297,18 @@ const MemberDetailPage = () => {
                         size="sm"
                         className="w-full justify-start"
                         onClick={() => {
-                          const cursorPosition = messageTextareaRef.current?.selectionStart || emailBody.length;
-                          const beforeCursor = emailBody.substring(0, cursorPosition);
-                          const afterCursor = emailBody.substring(cursorPosition);
-                          setEmailBody(beforeCursor + "{Popl User's Name}" + afterCursor);
+                          const cursorPosition =
+                            messageTextareaRef.current?.selectionStart ||
+                            emailBody.length;
+                          const beforeCursor = emailBody.substring(
+                            0,
+                            cursorPosition,
+                          );
+                          const afterCursor =
+                            emailBody.substring(cursorPosition);
+                          setEmailBody(
+                            beforeCursor + "{Popl User's Name}" + afterCursor,
+                          );
                         }}
                       >
                         Popl User&apos;s Name
@@ -2150,31 +2326,50 @@ const MemberDetailPage = () => {
               <Button variant="outline" className="rounded-full">
                 Cancel
               </Button>
-              <Button 
+              <Button
                 className="rounded-full bg-black text-white hover:bg-black/90"
                 onClick={async () => {
                   try {
                     const formData = new FormData();
-                    
+
                     // Add email data to formData
-                    formData.append("emailData.to", JSON.stringify([user?.email || ""]));
+                    formData.append(
+                      "emailData.to",
+                      JSON.stringify([user?.email || ""]),
+                    );
                     formData.append("emailData.subject", emailSubject);
                     formData.append("emailData.message", emailBody);
                     formData.append("emailData.sendAfterHour", emailAfterHour);
-                    formData.append("emailData.sendAfterMinute", emailAfterMinute);
-                    formData.append("emailData.isActive", autofollowisactive.toString());
-                    
+                    formData.append(
+                      "emailData.sendAfterMinute",
+                      emailAfterMinute,
+                    );
+                    formData.append(
+                      "emailData.isActive",
+                      autofollowisactive.toString(),
+                    );
+
                     // Send PATCH request to update the user card
-                    await Api.patch(`/user/${memberId}/card/update?index=${index}`, formData, {
-                      headers: {
-                        'Content-Type': 'multipart/form-data',
+                    await Api.patch(
+                      `/user/${memberId}/card/update?index=${index}`,
+                      formData,
+                      {
+                        headers: {
+                          "Content-Type": "multipart/form-data",
+                        },
                       },
-                    });
-                    
-                    showNotification("Follow-up email settings updated successfully", "success");
+                    );
+
+                    showNotification(
+                      "Follow-up email settings updated successfully",
+                      "success",
+                    );
                   } catch (error) {
                     console.error("Error updating follow-up email:", error);
-                    showNotification("Failed to update follow-up email settings", "error");
+                    showNotification(
+                      "Failed to update follow-up email settings",
+                      "error",
+                    );
                   }
                 }}
               >
@@ -2191,7 +2386,7 @@ const MemberDetailPage = () => {
             transition={{ duration: 0.3 }}
           >
             {!isPending && data ? (
-              <QrCodeView 
+              <QrCodeView
                 selectedColor={selectedQrColor}
                 onColorChange={setSelectedQrColor}
                 memberId={memberId}
@@ -2366,7 +2561,10 @@ const MemberDetailPage = () => {
                       onChange={() => setShowCompany(!showCompany)}
                       className="h-5 w-5 rounded border-gray-300 text-black focus:ring-0 accent-black"
                     />
-                    <label htmlFor="show-company" className="text-sm font-medium">
+                    <label
+                      htmlFor="show-company"
+                      className="text-sm font-medium"
+                    >
                       Company
                     </label>
                   </div>
@@ -2431,7 +2629,7 @@ const MemberDetailPage = () => {
                       <Upload className="h-3.5 w-3.5" />
                       Upload image
                     </motion.button>
-                    
+
                     {/* Hidden file input for virtual background upload */}
                     <input
                       ref={virtualBackgroundInputRef}
@@ -2441,12 +2639,24 @@ const MemberDetailPage = () => {
                       onChange={async (e) => {
                         if (e.target.files && e.target.files[0]) {
                           try {
-                            const processedImageUrl = await processVirtualBackgroundImage(e.target.files[0]);
+                            const processedImageUrl =
+                              await processVirtualBackgroundImage(
+                                e.target.files[0],
+                              );
                             setSelectedVirtualBackground(processedImageUrl);
-                            showNotification("Virtual background uploaded successfully!", "success");
+                            showNotification(
+                              "Virtual background uploaded successfully!",
+                              "success",
+                            );
                           } catch (error) {
-                            console.error("Error processing virtual background:", error);
-                            showNotification("Failed to process virtual background", "error");
+                            console.error(
+                              "Error processing virtual background:",
+                              error,
+                            );
+                            showNotification(
+                              "Failed to process virtual background",
+                              "error",
+                            );
                           }
                         }
                       }}
@@ -2462,7 +2672,7 @@ const MemberDetailPage = () => {
                         className={`relative aspect-[16/9] rounded-md overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-shadow ${selectedVirtualBackground === `/virtualBackground/${num}.jpeg` ? "ring-2 ring-black" : ""}`}
                         onClick={() =>
                           setSelectedVirtualBackground(
-                            `/virtualBackground/${num}.jpeg`
+                            `/virtualBackground/${num}.jpeg`,
                           )
                         }
                       >
@@ -2490,226 +2700,238 @@ const MemberDetailPage = () => {
           );
         }
 
-
       case "email-signature":
-
         // Mock data for email signature preview
-        const mockSignatureData = user?.emailSignature?.length > 0
-  ? {
-      name: data?.data.userCard?.name,
-      jobTitle: data?.data.userCard?.jobTitle,
-      companyName: data?.data.userCard?.companyName,
-      location: data?.data.userCard?.location,
-      phoneNumber: data?.data.userCard?.call,
-      email: data?.data.userCard?.email,
-      pronouns: "he/him",
-      profilePic: data?.data.userCard?.profilePicture,
-      companyLogo: data?.data.userCard?.companyLogo,
-      bannerImage: emailSignatureData.signature.images.banner,
-      disclaimer: emailSignatureData.signature.disclaimer,
-      showName: emailSignatureData.signature.information.name,
-      showPronouns: emailSignatureData.signature.information.pronouns,
-      showJobTitle: emailSignatureData.signature.information.jobtitle,
-      showCompanyName: emailSignatureData.signature.information.companyname,
-      showLocation: emailSignatureData.signature.information.location,
-      showEmail: emailSignatureData.showEmail,
-      showPhoneNumber: emailSignatureData.showPhoneNumber,
-      showProfilePic: emailSignatureData.signature.images.profilepic,
-      showCompanyLogo: emailSignatureData.signature.images.companylogo,
-      showQRCode: emailSignatureData.signature.images.qrcode,
-      showBanner: emailSignatureData.signature.images.showbanner,
-    }
-  : {
-      name: data?.data.userCard?.name,
-      jobTitle: data?.data.userCard?.jobTitle,
-      companyName: data?.data.userCard?.companyName,
-      location: data?.data.userCard?.location,
-      phoneNumber: data?.data.userCard?.call,
-      email: data?.data.userCard?.email,
-      pronouns: "he/him",
-      profilePic: data?.data.userCard?.profilePicture,
-      companyLogo: data?.data.userCard?.companyLogo,
-      bannerImage: false,
-      disclaimer:
-        "This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.",
-      showName: true,
-      showPronouns: false,
-      showJobTitle: true,
-      showCompanyName: true,
-      showLocation: true,
-      showEmail: false,
-      showPhoneNumber: false,
-      showProfilePic: true,
-      showCompanyLogo: true,
-      showQRCode: true,
-      showBanner: false,
-    };
-
+        const mockSignatureData =
+          user?.emailSignature?.length > 0
+            ? {
+                name: data?.data.userCard?.name,
+                jobTitle: data?.data.userCard?.jobTitle,
+                companyName: data?.data.userCard?.companyName,
+                location: data?.data.userCard?.location,
+                phoneNumber: data?.data.userCard?.call,
+                email: data?.data.userCard?.email,
+                pronouns: "he/him",
+                profilePic: data?.data.userCard?.profilePicture,
+                companyLogo: data?.data.userCard?.companyLogo,
+                bannerImage: emailSignatureData.signature.images.banner,
+                disclaimer: emailSignatureData.signature.disclaimer,
+                showName: emailSignatureData.signature.information.name,
+                showPronouns: emailSignatureData.signature.information.pronouns,
+                showJobTitle: emailSignatureData.signature.information.jobtitle,
+                showCompanyName:
+                  emailSignatureData.signature.information.companyname,
+                showLocation: emailSignatureData.signature.information.location,
+                showEmail: emailSignatureData.showEmail,
+                showPhoneNumber: emailSignatureData.showPhoneNumber,
+                showProfilePic: emailSignatureData.signature.images.profilepic,
+                showCompanyLogo:
+                  emailSignatureData.signature.images.companylogo,
+                showQRCode: emailSignatureData.signature.images.qrcode,
+                showBanner: emailSignatureData.signature.images.showbanner,
+              }
+            : {
+                name: data?.data.userCard?.name,
+                jobTitle: data?.data.userCard?.jobTitle,
+                companyName: data?.data.userCard?.companyName,
+                location: data?.data.userCard?.location,
+                phoneNumber: data?.data.userCard?.call,
+                email: data?.data.userCard?.email,
+                pronouns: "he/him",
+                profilePic: data?.data.userCard?.profilePicture,
+                companyLogo: data?.data.userCard?.companyLogo,
+                bannerImage: false,
+                disclaimer:
+                  "This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.",
+                showName: true,
+                showPronouns: false,
+                showJobTitle: true,
+                showCompanyName: true,
+                showLocation: true,
+                showEmail: false,
+                showPhoneNumber: false,
+                showProfilePic: true,
+                showCompanyLogo: true,
+                showQRCode: true,
+                showBanner: false,
+              };
 
         return (
           <>
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Email Signature Preview</h2>
-              
             </div>
-          <div className="space-y-6 scale-60 origin-top">
-            
-            
-            {/* Email Signature Preview Container */}
-            <div className="max-w-[500px] mx-auto">
-             
-              
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100" data-email-signature style={{minWidth: '500px', maxWidth: '500px'}}>
-                {/* Main content wrapper */}
-                <div className="flex items-start justify-between">
-                  {/* Left section - Profile and information */}
-                  <div className="flex flex-col items-center flex-1 mr-6">
-                    {/* Profile Picture with company logo badge */}
-                    {mockSignatureData.showProfilePic && (
-                      <div className="relative flex justify-center mb-4">
-                        <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden relative flex-shrink-0">
-                          <Image
-                            src={mockSignatureData.profilePic || "/defaultpp.png"}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                            width={96}
-                            height={96}
-                            quality={100}
-                            priority
-                            unoptimized
-                          />
-                        </div>
-                        
-                        {/* Company logo badge */}
-                        {mockSignatureData.showCompanyLogo && (
-                          <div className="absolute -top-1 -right-1 w-8 h-8 bg-white rounded-full overflow-hidden border-2 border-white shadow-lg">
+            <div className="space-y-6 scale-60 origin-top">
+              {/* Email Signature Preview Container */}
+              <div className="max-w-[500px] mx-auto">
+                <div
+                  className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+                  data-email-signature
+                  style={{ minWidth: "500px", maxWidth: "500px" }}
+                >
+                  {/* Main content wrapper */}
+                  <div className="flex items-start justify-between">
+                    {/* Left section - Profile and information */}
+                    <div className="flex flex-col items-center flex-1 mr-6">
+                      {/* Profile Picture with company logo badge */}
+                      {mockSignatureData.showProfilePic && (
+                        <div className="relative flex justify-center mb-4">
+                          <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden relative flex-shrink-0">
                             <Image
-                              src={mockSignatureData.companyLogo || "/defaultcompanylogo.png"}
-                              alt="Company"
-                              width={32}
-                              height={32}
+                              src={
+                                mockSignatureData.profilePic || "/defaultpp.png"
+                              }
+                              alt="Profile"
                               className="w-full h-full object-cover"
+                              width={96}
+                              height={96}
                               quality={100}
                               priority
                               unoptimized
                             />
                           </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Information below profile */}
-                    <div className="text-center space-y-1">
-                      {/* Name */}
-                      {mockSignatureData.showName && (
-                        <h3 className="font-semibold text-lg mb-1 text-gray-900">
-                          {mockSignatureData.name}
-                        </h3>
+
+                          {/* Company logo badge */}
+                          {mockSignatureData.showCompanyLogo && (
+                            <div className="absolute -top-1 -right-1 w-8 h-8 bg-white rounded-full overflow-hidden border-2 border-white shadow-lg">
+                              <Image
+                                src={
+                                  mockSignatureData.companyLogo ||
+                                  "/defaultcompanylogo.png"
+                                }
+                                alt="Company"
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                                quality={100}
+                                priority
+                                unoptimized
+                              />
+                            </div>
+                          )}
+                        </div>
                       )}
-                      
-                      {/* Pronouns */}
-                      {mockSignatureData.showPronouns && mockSignatureData.pronouns && (
-                        <p className="text-xs text-gray-500 mb-1">
-                          ({mockSignatureData.pronouns})
-                        </p>
-                      )}
-                      
-                      {/* Job Title */}
-                      {mockSignatureData.showJobTitle && mockSignatureData.jobTitle && (
-                        <p className="text-sm mb-1 text-gray-700 font-medium">
-                          {mockSignatureData.jobTitle}
-                        </p>
-                      )}
-                      
-                      {/* Company Name */}
-                      {mockSignatureData.showCompanyName && mockSignatureData.companyName && (
-                        <p className="font-semibold mb-2 text-base text-gray-900">
-                          {mockSignatureData.companyName}
-                        </p>
-                      )}
-                      
-                      {/* Contact info */}
-                      <div className="mt-2 space-y-1">
-                        {/* Email */}
-                        {mockSignatureData.showEmail && mockSignatureData.email && (
-                          <p className="text-sm text-blue-600 font-medium">
-                            {mockSignatureData.email}
-                          </p>
+
+                      {/* Information below profile */}
+                      <div className="text-center space-y-1">
+                        {/* Name */}
+                        {mockSignatureData.showName && (
+                          <h3 className="font-semibold text-lg mb-1 text-gray-900">
+                            {mockSignatureData.name}
+                          </h3>
                         )}
-                        
-                        {/* Phone */}
-                        {mockSignatureData.showPhoneNumber && mockSignatureData.phoneNumber && (
-                          <p className="text-sm text-gray-700">
-                            {mockSignatureData.phoneNumber}
-                          </p>
-                        )}
-                        
-                        {/* Location */}
-                        {mockSignatureData.showLocation && mockSignatureData.location && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {mockSignatureData.location}
-                          </p>
-                        )}
+
+                        {/* Pronouns */}
+                        {mockSignatureData.showPronouns &&
+                          mockSignatureData.pronouns && (
+                            <p className="text-xs text-gray-500 mb-1">
+                              ({mockSignatureData.pronouns})
+                            </p>
+                          )}
+
+                        {/* Job Title */}
+                        {mockSignatureData.showJobTitle &&
+                          mockSignatureData.jobTitle && (
+                            <p className="text-sm mb-1 text-gray-700 font-medium">
+                              {mockSignatureData.jobTitle}
+                            </p>
+                          )}
+
+                        {/* Company Name */}
+                        {mockSignatureData.showCompanyName &&
+                          mockSignatureData.companyName && (
+                            <p className="font-semibold mb-2 text-base text-gray-900">
+                              {mockSignatureData.companyName}
+                            </p>
+                          )}
+
+                        {/* Contact info */}
+                        <div className="mt-2 space-y-1">
+                          {/* Email */}
+                          {mockSignatureData.showEmail &&
+                            mockSignatureData.email && (
+                              <p className="text-sm text-blue-600 font-medium">
+                                {mockSignatureData.email}
+                              </p>
+                            )}
+
+                          {/* Phone */}
+                          {mockSignatureData.showPhoneNumber &&
+                            mockSignatureData.phoneNumber && (
+                              <p className="text-sm text-gray-700">
+                                {mockSignatureData.phoneNumber}
+                              </p>
+                            )}
+
+                          {/* Location */}
+                          {mockSignatureData.showLocation &&
+                            mockSignatureData.location && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {mockSignatureData.location}
+                              </p>
+                            )}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Right section - QR code */}
+                    <div className="flex flex-col items-center justify-center flex-shrink-0">
+                      {mockSignatureData.showQRCode && (
+                        <>
+                          <div className="w-20 h-20 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center mb-2">
+                            <Image
+                              src={
+                                data?.data.userCard?.qrCodeUrl ||
+                                "/defaultpp.png"
+                              }
+                              alt="QR Code"
+                              width={80}
+                              height={80}
+                              className="object-cover"
+                              quality={100}
+                              priority
+                              unoptimized
+                            />
+                          </div>
+                          <p className="text-xs text-blue-600 text-center max-w-[100px] leading-relaxed">
+                            My Digital Business Card
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Right section - QR code */}
-                  <div className="flex flex-col items-center justify-center flex-shrink-0">
-                    {mockSignatureData.showQRCode && (
-                      <>
-                        <div className="w-20 h-20 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center mb-2">
-                          <Image
-                            src={data?.data.userCard?.qrCodeUrl || "/defaultpp.png"}
-                            alt="QR Code"
-                            width={80}
-                            height={80}
-                            className="object-cover"
-                            quality={100}
-                            priority
-                            unoptimized
-                          />
-                        </div>
-                        <p className="text-xs text-blue-600 text-center max-w-[100px] leading-relaxed">
-                          My Digital Business Card
-                        </p>
-                      </>
+
+                  {/* Banner image */}
+                  {mockSignatureData.showBanner &&
+                    mockSignatureData.bannerImage && (
+                      <div className="mt-4">
+                        <Image
+                          src={mockSignatureData.bannerImage}
+                          alt="Banner"
+                          width={500}
+                          height={96}
+                          className="w-full h-auto max-h-24 object-cover rounded-lg"
+                          quality={100}
+                          priority
+                          unoptimized
+                        />
+                      </div>
                     )}
-                  </div>
+
+                  {/* Disclaimer */}
+                  {mockSignatureData.disclaimer && (
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {mockSignatureData.disclaimer}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                
-                {/* Banner image */}
-                {mockSignatureData.showBanner && mockSignatureData.bannerImage && (
-                  <div className="mt-4">
-                    <Image
-                      src={mockSignatureData.bannerImage}
-                      alt="Banner"
-                      width={500}
-                      height={96}
-                      className="w-full h-auto max-h-24 object-cover rounded-lg"
-                      quality={100}
-                      priority
-                      unoptimized
-                    />
-                  </div>
-                )}
-                
-                {/* Disclaimer */}
-                {mockSignatureData.disclaimer && (
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <p className="text-xs text-gray-600 leading-relaxed">
-                      {mockSignatureData.disclaimer}
-                    </p>
-                  </div>
-                )}
               </div>
+
+              {/* Additional actions */}
             </div>
-            
-            {/* Additional actions */}
-            
-          </div>
           </>
-          
         );
 
         return (
@@ -2723,9 +2945,11 @@ const MemberDetailPage = () => {
 
                 <div className="mb-8">
                   <div className="w-[200px] h-[200px] mx-auto">
-                    <Image
+                    <img
                       src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAAAXNSR0IArs4c6QAAELJJREFUeF7tnVuS2zoMBZOpe/8b+K/GVSOPT0TLlADJao5kSUA7gNsypeRm/vzx4////PnzEO/Pnz/L//fn/wjq39v3v/3+Y+O7X+e5O4e+v/tMfak8eCz626849vdf+u3X/FfH6/sLgeeGVcWXnzHief7B7X++wPARJMIETAiELILKdRx5n+WyEJKZuAQEkAyCXMcIILkE+XiLtUKQaNadALI+n11/QLimoZovVSYAGUAYQRj+lSufaL7KaSmADCDM4EcHZElrcyWvnPF0BeS7Dye/D9X8Ws1ldH0BiD5KqufZu3P0/qsA6fKhZ5dIGAniHAGIE9gopo1XQQKIIzlcTCuumAGQQKS9QIQ0fc3XTnMAF4uG/0D+17sOPkkXUUZ5qvbfDjnm+F3U8OnDLB2L+voq5BZ7sQCQo3GGJD54kucAYjI1ZgKIOfRPAQnOUcdl2PS3H+2Yl5eXZT5VWFX3AU4a+2iZdLlNH2IJIIDEM6EMQWs9MEo8gKwCDiDUvg0QXBD1AikI6uFJj6G3Xtb9qhyXL5DKCmshkf1XAUG/qOo9Dt8u111hL57PqEu161m+OVUPxyPzpTmmD7EA8kuA0UHeASQSJ0UbQKLADroABJBFgGxBVTCEVNXdIudDrbKlv96OreRbMS/6/i6qD9e7uv3o8epw3wtIdI3pd+JV10Fg7IjqhU9/ACJEni8TIMTG+Bgg6iLNFomLBQaU51t1YcbZ78szRQ2AZOF/KLbLHrv9cuiit+idKsCbZoAEkEXNuk7EXRwAZDdbAPn6oqZG3PXD3ZwX5+uqRE6bguu+pl+tl+7grM5nBamKs3qBdOeq4qxeoFVgZ+0X7nM1v2jnF0DI7gOIUGw3RxdALtedBhDxnVpVxe0k7aTou0RHj6fXqHpBdZlr9QKrgAZEat+4maovEFpUXxTxqt5Vqc/boao3QNZDmQ4IJRsgZ62T/j5AyHeEAQQgywIs9yLViGiBdCFZ1H4VsnpB6EWgVZ6eu4q5OnM8Otu1l+huf7rPqodiRtcXQCSCAaS9BwEkakR6OEDWNdMdmOmfpHf3IE8FpLoRsjtIzXV+UFxRHLZbpjuy3YR3V+jV/mqel6+o6S8UH5WzejvsGol010B1v5ujrqB2Od4O0Xqnf1DYpSh3x6HaT39Q2AWQq8u3+lBplFuVZpd8aTnur9muPS6cEw9xbB/ClnOj7lKXef0FyG6QXeIyTUiXuHagiXHrEKddDB3m1CUOQM67VoBEAteu+LuLTvv7ezNll4D3pVPPvnK06LzUpe7y7KoLICB/3eZSy8VN1l4geq9Rdc3uyJnmYS/HdEDubzIVRe3FpB87FGnXC7Iak9oeHeb243Yd2revfVXzpbp363nVXi3mS/Ogc+4OTJf9QguELsSokNQimV7c6s5dB6SyX9AYqheqOM/eGH3Ag7poV8kdfUemOs9ssQDyl3hVIHYB1D0O+6Wox1SdK0D2qgWQD2TvXxQdJbj7/V1EoddU46A6X7VfcbApklvoRYPvx9Edlerxu3bovVT1HnRHsmuP0n6qi0UBofcG1IDdYnQpNkCiQrMvpgJIj3IHSFO2cHGuLuwqztXeiIp2u9aO5wSQ6khkrKa7WABZl0dXQJ6/A1dxAsjOeE0H5P5Ws6r9hsq36wXpkscOSHSs9A9z+sSmw/7ei6r7AJIkpCrwCsXtdpAqPrvq1M0AOTdDqi7SXQeNJXqRqm7T1YOr4lRlWd2v6jH0YpY+xOqOSlS0uy+Ku/ZC9iAV/L4zFkDIt2JVFoQGY/u5ij6ArE+mAuQj7PPeue/SWguE2FztZunHRl13AJLBs3r8dkagqwGN8+OFuTyTfLWguneigHS5WO7eI9qDVLlYFQkFyPnOAAiZLUTiAOQcj13kX/W+7m78Xfr+B0DAWRepCnH1nNRlqVpUu3y7HqLKDp0LQBw9aBXnbr/deLXF+v+5b7EUAh/1p7SnffcR6nuoqBfrEk+Vsf+iW7Sn6hbL5YJRQKKLIIocASQqWHucd2/nqS4AwrlnNfdJkOlvsai4VeYbFVG1KdR8VfNV81XzVfWgHjQd6Lp9qrrdYlV9ONwhxB3iosRF4wCQyAcazQCQ811ZAFm1Ad9iFTUDIGvBqglftXRTO9S8lTJVc1bNX9X+0v6KbreKzbrD/dGouoN0fcHcPxe18F2+xXLGyAppfdwGiE/IFStAAKnQavcYAwhlzc8KEEAok34+Aoh/D1J10UGJTOK6PssCSNXKF+a6C0xdEwAJCrZrEYvW5htdopuvNE5qH/UI+h16tPc6fdpq9Q5AM/UhFh30APLBgC9fUqzqse1PAfKoHztU7Tei/alQdCHqbqGmf0uxKzDVIlHiAuPoAHW5Q+oODH2ucQEQQC4VAwUDIHZAAHKRZ/YeZPeveDxqIY+eHdAdkY9BSe4h6LmrF7hq/L0AFbtRIQB52IPs+hN3in7VLpnuTtBbP4CsqXV1gdWOQQFZPnYH5PmpfncdVPtEIVbuK6ieXS/M6nloXKoXs7sOdH9dQVvdmuq+MAYQFQ9AvgUfQFaF6TJPPdiue5AuF+tRF6ti31WnLu2LzrVqz3Q/x67WAQQgyw0CfcQLIFEl+uMASMPHvNULCiDnTQo9Wl3oAPJ7j9O6bk9rsQCiuQ8QTb+HvQDywSA6xOr+gNs6To1BBSK9H+GFv74xxEWn9imuFn2eSe/53P9WtoE2PNGPs1U/L9XlQVj6EKt6EahLUy3CLm5dtBexTd8j3O+3KOU0rv0/qm6353r5X01C3aUuoFPbAHnwyVZ0QVA/ALKoZNcDp/o8KmSAZMABCCBO/W7aAJKBNsEGSBJcwRwgiwhdk6tLkapDnBsj4jlDJDpvHTcaB/TO1WPpPiN9CXUL7nJB77YB5CKpqtx2cQvHk01yl/Oos7fTfvRcrB33dL0B0mTdslhcDw0cqptDekFQPajroq6H65y0LrQc9/bpQrYAYv+j6AASLWRrvE+E5BP3+BpJBwoghWwBBCDL9xUAIQWuqKUwkXQRZQBx7oj2GyjnuamNem/UBdzi81g3qlssFXk63/RnkPfOoUq2imjVmoBcZ0C+RyE3gAPk/Fuf6Yrx5SOAbOJEi6sSEUDWd1RUCwCpJHB/nOsZsGKEiijoQywKCG2xug7xqPiuB151/K6C+/JFK3d0QbrAmLqIAMhfsVfHqRc4nSMXLVpH/5w+xAJIaj6nGQDIOY+uL6UBknaKZQQgOQVmdcdxnbyLfbQhmj7EovmOnr8ryaK53OKgDpq7n+mjXff8TJ3rqvEqHjQPerHQ+qInAS+/sVbFqWtDZAfEdUOui3TVjhbXvbiV+4dKgVRxMzxQlX6XfXb3qeuuXTcL0y/s6NycogAIucWiRfIxjAKEFpkrbt+CdcHrKvLKfrsA0vUMlD5jXrUl+fbhog8sMq75K79QYwVjhyUApi+Qryrt/7XrDk31UO+6UPt01bcCImqHDnNa5Ln2qpddVx0UwQCJDnFyOO76cs2vASRJpGKlGgcg60IEyIfAPITVEQQg5/25eurU5NeyVeNyxRHtDY7zUU26HhRGzzMoYgfRRQmkirkK4S28XURVxK2eM9Kje5HsL4Z0wDv2VfjyFUB2rw9A7B94UBLTBQiQXcm3zwWIswP8lwEQgjMtJoCsaafekgHkgYuV9VPdQdQFl/Wl49Cx7zrzfnZYdbz1232ivcv9PkB9+Md1HLrFojI8bSC+vKgSDxD6dcHUQYteRABpAs5dFF2E7wvyMXEqEFf79Nz0OrsMtOvl3nX+asMFkEsfYlGRo8JUu1iu4qteoI84aBzVi8l10ey9QLVOWRdYjQkgyUgBkHMhqoGouEa2nQsrGxcgxYMA5PwFRsU1ku3srBTbALGIQbWOHa2GWiAVF6vLWFQPxbyopfLl/DLPO8z0fFV7tXN9+l5sOpB0j7QHv9IKIEcxu7gFALluTtbXBYDIHzXWh/m+UwAhF0N8iOezegoJEACpVuzorAAxS/qoeIt8AIgJxmrbZfZsLZl40jWSP+OAAAQgyx8XoJu2lJ8bY+rBVStDt1+EdmtxjgGI6WI9LdDl23Sz7Xt3giYmCoz9GXWGUr+d5wrx5fETAgQQmh5ArxhQiwIgQr+8bwEgqwQoun4XaTUOgOwZRL/FAgg/EYAsCwEgtKpxsSjgVOTqRRcFgx5OFTvdHqrH02PU+3V3oOmfo6gLDiBnVfiYbnUBBBdCMpWaAgQgz/ygE5prXB0HIMtXKgPyzUrXqLMNzaqLpfp5FgCA/L4fqe5BXPPNtgNSfRZGF6LrYnDdzKoKuDxH9ZzZQu7+Ix/0eHrM9DjT90hqIFWA0FuRyrPUfHRJevrxriKm86m2qf2uc9PjdE0DSDqJ6ti32276MwggxMUyzChAbumQcaWaAAiRmZJ+ZW9nDiBkIrv2qrfodMek61tvgBD0HnXnXAXj+k8RVvFTIe+ew/V80X6q9u3mQteocpwBJHFBASQ4IJAXKOUhQP4peR8Bcrfzuj4Dc8WkAkI/xKKddFWL7AIHyDkR1HVx2aO3k/RzzOgCdZ2zstdv3+vI+9A4xIU4fQYpz3TXG+7fjF595ue62aj2e66L/BBLvR+o7lCr5wDIOTNUBFccAPJ7GBVUC0Dil04sbaVesrrBec5D92nu/4q6y3x1PnvdAQLIb9UAkotLPl3OzVPZTn+xl0KKKrK94wCkAJehXGkCIOcCVuMA5Pxrkt7NAkgOFyqyKzF0TxTZKw+sqwekF489qG4J6X2Feo43ENTFVOOgQFNNMwGh+6hVFVbJHSBrJFXZySZv+UjXJW91nj9sCEDIHgRAABLLGhXNXychQBZfVVTtADl/FkgvUjUPG2suZapuHK7bR/2OiPdZAeTDE/oeRH0IoJLdi0ldZ7gpJ+TqDm/37NVjlDyoIvQFVYmls3a6C+r6P5LRC0Cx714M1F518077olpQXbs+flLjAiQ6XFU7VJfI3bzoBeKLgwJf3UMBeFSo0c/XNo7TATndnKtwORG2hQ4QntgKQKIc0c+pGBRxqBGAuBWhF6nJ5gIE3mJlBJjetVMBmT59wfdVsQYIQMhzxdeBd7EBBCDkWpPshxcvQN4BSKZjt60ASY3NSzmAFL7FSUnaRQaAxRly54YzAiLXOMCOdwwcQCRvbXN3CTz1GIDQ4h7fT/sylrhdk/AdpwEIQE4U2fUAkHVhdrVwU38GeDtgNZb6Mmj320RaJKqdYnVzPpWCDUC6WMTKGmk3kEq8XQAB5O+HpJRoeu9FdQYI+Rari4WreneJdYmBviQpj1AfCKgvSdrcHYzmP/0WyyXwSBuABKI1OQSQ63sT9SbFNed0QF5eXhb+HN/WFwhVAu+CVVwPF8H03ALIrwMIkPOXOHSB3vfTutAGBSCJkgMIQNS/DK7uzaltui5OXROpfOkiG0CiwFUdu94Hlzfo4LxVryy6/HdagNUeDkUsn4PMoLxrIQNkVqr/xgkgl/31u9Rbb7EApK6AXe40ACQ3R8VDqNFH6l0WYnecXS5K9xx0PuntLkDI7gdAsiX8cXyXvZfiYqlDTU2WPvn4uEKrrbyAqrhXJcDvEwCSU7cLHoeI111/99GyPLoA0qXou/Kl9ncDxKVHlQ7cc4/+3wsBs7RXON6lSJWdrlQChIpYpx8FBCDJYqVLSCd+l+6AJBPaYJ7+IJJ+iNWgPqdDAaQBbQOjtIFQAbEJmWzT5dZRTff7rri6XCzqMk6Pn37U9D7kjNTXZh58ikVF7QJSl2vdZb4OO131nlbcXS5KV3Jf/g+zIu4dGmqr+wAAAABJRU5ErkJggg=="
                       alt="QR Code"
+                      width={200}
+                      height={200}
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -2745,7 +2969,7 @@ const MemberDetailPage = () => {
             </div>
           </div>
         );
-      
+
       case "links":
         return (
           <div className="space-y-6">
@@ -2912,7 +3136,10 @@ const MemberDetailPage = () => {
                       iconComponent = (
                         <div className="relative w-6 h-6">
                           <Image
-                            src={linkImages[linkImageKey] || `/links/${linkKey}.svg`}
+                            src={
+                              linkImages[linkImageKey] ||
+                              `/links/${linkKey}.svg`
+                            }
                             alt={linkName}
                             width={24}
                             height={24}
@@ -2951,14 +3178,14 @@ const MemberDetailPage = () => {
 
                       // Linki linkOrder listesinden de kaldır
                       const newLinkOrder = linkOrder.filter(
-                        (link) => link !== linkKey
+                        (link) => link !== linkKey,
                       );
                       setLinkOrder(newLinkOrder);
 
                       // Bildirim göster
                       showNotification(
                         `${linkName} successfully removed`,
-                        "success"
+                        "success",
                       );
 
                       // Reset removing state
@@ -2980,7 +3207,7 @@ const MemberDetailPage = () => {
                       onDrop={(e: React.DragEvent<HTMLDivElement>) => {
                         e.preventDefault();
                         const draggedIndex = parseInt(
-                          e.dataTransfer.getData("text/plain")
+                          e.dataTransfer.getData("text/plain"),
                         );
                         if (draggedIndex !== index) {
                           reorderLinks(draggedIndex, index);
@@ -3360,7 +3587,7 @@ const MemberDetailPage = () => {
                     onDrop={(e: React.DragEvent<HTMLDivElement>) => {
                       e.preventDefault();
                       const draggedIndex = parseInt(
-                        e.dataTransfer.getData("text/plain")
+                        e.dataTransfer.getData("text/plain"),
                       );
                       if (draggedIndex !== index) {
                         reorderFields(draggedIndex, index);
@@ -3413,7 +3640,7 @@ const MemberDetailPage = () => {
                         className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                         onClick={() =>
                           setLeadCaptureFields(
-                            leadCaptureFields.filter((f) => f.id !== field.id)
+                            leadCaptureFields.filter((f) => f.id !== field.id),
                           )
                         }
                       >
@@ -3623,8 +3850,14 @@ const MemberDetailPage = () => {
                 <div className="flex items-center">
                   <h3 className="text-sm font-medium">Hidden Fields</h3>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 ml-1 text-gray-400" />
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="ml-1 inline-flex text-gray-400"
+                        aria-label="Hidden fields info"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="w-60 text-xs">
@@ -3731,7 +3964,6 @@ const MemberDetailPage = () => {
             </div>
           </div>
         );
-    
 
       case "accessories":
         return (
@@ -3745,9 +3977,11 @@ const MemberDetailPage = () => {
 
                 <div className="mb-8">
                   <div className="w-[200px] h-[200px] mx-auto">
-                    <Image
+                    <img
                       src="data:image/png;base64,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"
                       alt="QR Code"
+                      width={200}
+                      height={200}
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -3854,7 +4088,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">center live Preview</p>
+                <p className="text-[#828282] font-semibold">
+                  center live Preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -3928,59 +4164,58 @@ const MemberDetailPage = () => {
 
                   {/* Contact button */}
                   <div className="flex gap-2 mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <FaMessage className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <FaMessage className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - horizontal layout */}
@@ -3988,7 +4223,7 @@ const MemberDetailPage = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                       {linkOrder
                         .filter(
-                          (key) => activeLinks[key as keyof typeof activeLinks]
+                          (key) => activeLinks[key as keyof typeof activeLinks],
                         )
                         .slice(0, 6) // Limit to 6 links for better display
                         .map((linkKey) => {
@@ -3997,7 +4232,8 @@ const MemberDetailPage = () => {
                             linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
 
                           // Determine which icon to show based on link key
-                          const linkImageKey = linkKey as keyof typeof linkImages;
+                          const linkImageKey =
+                            linkKey as keyof typeof linkImages;
                           if (linkImages[linkImageKey]) {
                             iconComponent = (
                               <div className="relative w-5 h-5">
@@ -4040,14 +4276,14 @@ const MemberDetailPage = () => {
                     </div>
                     {/* Show more button if there are more than 6 links */}
                     {linkOrder.filter(
-                      (key) => activeLinks[key as keyof typeof activeLinks]
+                      (key) => activeLinks[key as keyof typeof activeLinks],
                     ).length > 6 && (
-                        <div className="mt-2 text-center">
-                          <button className="text-[10px] text-blue-600 font-medium">
-                            Show More
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-2 text-center">
+                        <button className="text-[10px] text-blue-600 font-medium">
+                          Show More
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4058,7 +4294,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">left live Preview</p>
+                <p className="text-[#828282] font-semibold">
+                  left live Preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -4119,12 +4357,8 @@ const MemberDetailPage = () => {
                 {/* Content section */}
                 <div className="mt-12 px-5 flex flex-col items-left text-left">
                   <h3 className="font-bold text-sm">{formData.name}</h3>
-                  <p className="text-xs mt-1">
-                    {formData.jobTitle}
-                  </p>
-                  <p className="text-xs mt-1">
-                    {formData.company}
-                  </p>
+                  <p className="text-xs mt-1">{formData.jobTitle}</p>
+                  <p className="text-xs mt-1">{formData.company}</p>
                   <p className="text-xs mt-1">{formData.location}</p>
 
                   <div className="mt-4 w-full">
@@ -4133,62 +4367,60 @@ const MemberDetailPage = () => {
                     </p>
                   </div>
 
-                 
                   {/* Contact buttons */}
                   <div className="flex gap-2 mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <FaMessage className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <FaMessage className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - scrollable container */}
@@ -4197,20 +4429,26 @@ const MemberDetailPage = () => {
                       <div className="max-h-[200px] overflow-y-auto pr-1 space-y-2 hidden-scrollbar card-links-scrollbar">
                         {linkOrder
                           .filter(
-                            (key) => activeLinks[key as keyof typeof activeLinks]
+                            (key) =>
+                              activeLinks[key as keyof typeof activeLinks],
                           )
                           .map((linkKey) => {
                             let iconComponent;
                             const linkName =
-                              linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
+                              linkKey.charAt(0).toUpperCase() +
+                              linkKey.slice(1);
 
                             // Determine which icon to show based on link key
-                            const linkImageKey = linkKey as keyof typeof linkImages;
+                            const linkImageKey =
+                              linkKey as keyof typeof linkImages;
                             if (linkImages[linkImageKey]) {
                               iconComponent = (
                                 <div className="relative w-5 h-5">
                                   <Image
-                                    src={linkImages[linkImageKey] || `/links/${linkKey}.svg`}
+                                    src={
+                                      linkImages[linkImageKey] ||
+                                      `/links/${linkKey}.svg`
+                                    }
                                     alt={linkName}
                                     fill
                                     sizes="20px"
@@ -4247,25 +4485,32 @@ const MemberDetailPage = () => {
                           })}
                       </div>
                       {/* Gradient fade effect at the bottom when content overflows */}
-                    </div>) :(
+                    </div>
+                  ) : (
                     <div className="mt-4 w-full  relative">
                       <div className="max-h-[200px] overflow-y-auto  space-y-2 modern-scrollbar card-links-scrollbar">
                         {linkOrder
                           .filter(
-                            (key) => activeLinks[key as keyof typeof activeLinks]
+                            (key) =>
+                              activeLinks[key as keyof typeof activeLinks],
                           )
                           .map((linkKey) => {
                             let iconComponent;
                             const linkName =
-                              linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
+                              linkKey.charAt(0).toUpperCase() +
+                              linkKey.slice(1);
 
                             // Determine which icon to show based on link key
-                            const linkImageKey = linkKey as keyof typeof linkImages;
+                            const linkImageKey =
+                              linkKey as keyof typeof linkImages;
                             if (linkImages[linkImageKey]) {
                               iconComponent = (
                                 <div className="relative w-5 h-5">
                                   <Image
-                                    src={linkImages[linkImageKey] || `/links/${linkKey}.svg`}
+                                    src={
+                                      linkImages[linkImageKey] ||
+                                      `/links/${linkKey}.svg`
+                                    }
                                     alt={linkName}
                                     fill
                                     sizes="20px"
@@ -4301,8 +4546,12 @@ const MemberDetailPage = () => {
                                   {iconComponent}
                                 </div>
                                 <div className="flex flex-col text-white">
-                                  <span className="text-xs font-medium">{userLinks[linkKey]?.title || ""}</span>
-                                  <span className="text-sm opacity-80">{userLinks[linkKey]?.username || ""}</span>
+                                  <span className="text-xs font-medium">
+                                    {userLinks[linkKey]?.title || ""}
+                                  </span>
+                                  <span className="text-sm opacity-80">
+                                    {userLinks[linkKey]?.username || ""}
+                                  </span>
                                 </div>
                               </div>
                             );
@@ -4320,7 +4569,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">Card live preview</p>
+                <p className="text-[#828282] font-semibold">
+                  Card live preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -4332,14 +4583,15 @@ const MemberDetailPage = () => {
               <div
                 className="w-64 h-[520px] flex flex-col rounded-[25px] mt-4 border overflow-auto hidden-scrollbar scrollbar-hide border-[rgb(189,189,189)]"
                 style={{
-                  backgroundColor: selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme,
+                  backgroundColor:
+                    selectedCardTheme === "transparent"
+                      ? "#BFDBFE"
+                      : selectedCardTheme,
                   fontFamily: selectedFont,
                 }}
               >
                 {/* Full profile picture container with background */}
-                <div
-                  className="w-full relative"
-                >
+                <div className="w-full relative">
                   {/* Profile image with lower z-index */}
                   <div className="relative w-full h-72 z-10">
                     <Image
@@ -4354,7 +4606,7 @@ const MemberDetailPage = () => {
                   <div
                     className="absolute inset-0 z-20"
                     style={{
-                      background: `linear-gradient(to top, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 0%, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 1%, rgba(255,255,255,0) 50%)`
+                      background: `linear-gradient(to top, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 0%, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 1%, rgba(255,255,255,0) 50%)`,
                     }}
                   />
                   {/* Company logo on bottom right */}
@@ -4373,75 +4625,68 @@ const MemberDetailPage = () => {
                 {/* Content section */}
                 <div className="px-5 flex flex-col items-start text-left">
                   <h3 className="font-bold text-xl mb-1">{formData.name}</h3>
-                  <p className="text-sm mb-0.5">
-                    {formData.jobTitle}
-                  </p>
-                  <p className="text-xs mb-0.5">
-                    {formData.company}
-                  </p>
+                  <p className="text-sm mb-0.5">{formData.jobTitle}</p>
+                  <p className="text-xs mb-0.5">{formData.company}</p>
                   <p className="text-xs">{formData.location}</p>
 
                   <div className="mt-3 w-full">
-                    <p className="text-xs leading-relaxed">
-                      {formData.bio}
-                    </p>
+                    <p className="text-xs leading-relaxed">{formData.bio}</p>
                   </div>
 
                   {/* Contact button */}
-                 <div className="flex gap-2 justify-center w-full mt-5">
+                  <div className="flex gap-2 justify-center w-full mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <MdSave className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <MdSave className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - horizontal layout for portrait mode */}
@@ -4449,7 +4694,7 @@ const MemberDetailPage = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                       {linkOrder
                         .filter(
-                          (key) => activeLinks[key as keyof typeof activeLinks]
+                          (key) => activeLinks[key as keyof typeof activeLinks],
                         )
                         .slice(0, 6) // Limit to 6 links for better display
                         .map((linkKey) => {
@@ -4458,7 +4703,8 @@ const MemberDetailPage = () => {
                             linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
 
                           // Determine which icon to show based on link key
-                          const linkImageKey = linkKey as keyof typeof linkImages;
+                          const linkImageKey =
+                            linkKey as keyof typeof linkImages;
                           if (linkImages[linkImageKey]) {
                             iconComponent = (
                               <div className="relative w-5 h-5">
@@ -4501,14 +4747,14 @@ const MemberDetailPage = () => {
                     </div>
                     {/* Show more button if there are more than 6 links */}
                     {linkOrder.filter(
-                      (key) => activeLinks[key as keyof typeof activeLinks]
+                      (key) => activeLinks[key as keyof typeof activeLinks],
                     ).length > 6 && (
-                        <div className="mt-2 text-center">
-                          <button className="text-[10px] text-blue-600 font-medium">
-                            Show More
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-2 text-center">
+                        <button className="text-[10px] text-blue-600 font-medium">
+                          Show More
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4516,54 +4762,52 @@ const MemberDetailPage = () => {
           );
         }
 
-
-
       case "email-signature":
-        
         // Function to download email signature as image
         const downloadEmailSignature = async () => {
           if (isDownloading) return; // Prevent multiple downloads
-          
+
           setIsDownloading(true);
           try {
             // Get the email signature element
-            const element = document.querySelector('[data-email-signature]');
+            const element = document.querySelector("[data-email-signature]");
             if (!element) {
-              console.error('Email signature element not found');
+              console.error("Email signature element not found");
               return;
             }
 
             // Import dom-to-image dynamically
-            const domtoimage = (await import('dom-to-image')).default;
-            
+            const domtoimage = (await import("dom-to-image")).default;
+
             // Get the parent container and temporarily remove scaling
-            const parentContainer = element.closest('.scale-60') as HTMLElement;
+            const parentContainer = element.closest(".scale-60") as HTMLElement;
             const originalTransform = parentContainer?.style.transform;
-            const originalTransformOrigin = parentContainer?.style.transformOrigin;
-            
+            const originalTransformOrigin =
+              parentContainer?.style.transformOrigin;
+
             if (parentContainer) {
-              parentContainer.style.transform = 'scale(1)';
-              parentContainer.style.transformOrigin = 'top left';
+              parentContainer.style.transform = "scale(1)";
+              parentContainer.style.transformOrigin = "top left";
             }
 
             // Convert all relative URLs to absolute URLs for images
-            const images = element.querySelectorAll('img');
+            const images = element.querySelectorAll("img");
             const imageUrlMap = new Map();
-            
+
             // Store original sources and convert to absolute URLs
             Array.from(images).forEach((img, index) => {
               const originalSrc = img.src;
               imageUrlMap.set(index, originalSrc);
-              
+
               // Ensure we have absolute URLs
-              if (img.src.startsWith('/')) {
+              if (img.src.startsWith("/")) {
                 img.src = window.location.origin + img.src;
               }
             });
 
             // Wait for any images to load and DOM to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             // Ensure all images are loaded with proper error handling
             const imagePromises = Array.from(images).map((img, index) => {
               return new Promise((resolve) => {
@@ -4571,55 +4815,63 @@ const MemberDetailPage = () => {
                   resolve(null);
                   return;
                 }
-                
+
                 const timeout = setTimeout(() => {
-                  console.warn(`Image ${index} loading timeout, using fallback`);
+                  console.warn(
+                    `Image ${index} loading timeout, using fallback`,
+                  );
                   // Use fallback image
-                  img.src = img.alt === 'Profile' ? '/defaultpp.png' : '/defaultcompanylogo.png';
+                  img.src =
+                    img.alt === "Profile"
+                      ? "/defaultpp.png"
+                      : "/defaultcompanylogo.png";
                   resolve(null);
                 }, 3000);
-                
+
                 img.onload = () => {
                   clearTimeout(timeout);
                   resolve(null);
                 };
-                
+
                 img.onerror = () => {
                   clearTimeout(timeout);
                   console.warn(`Image ${index} failed to load, using fallback`);
                   // Use fallback image
-                  img.src = img.alt === 'Profile' ? '/defaultpp.png' : '/defaultcompanylogo.png';
+                  img.src =
+                    img.alt === "Profile"
+                      ? "/defaultpp.png"
+                      : "/defaultcompanylogo.png";
                   resolve(null);
                 };
               });
             });
-            
+
             await Promise.all(imagePromises);
-            
+
             // Additional wait to ensure everything is rendered
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
             // Convert element to high-quality image using dom-to-image
             const dataUrl = await domtoimage.toPng(element as HTMLElement, {
               quality: 1.0,
               width: 500,
               height: element.scrollHeight,
               style: {
-                transform: 'scale(1)',
-                transformOrigin: 'top left',
-                width: '500px',
-                maxWidth: '500px',
-                minWidth: '500px'
+                transform: "scale(1)",
+                transformOrigin: "top left",
+                width: "500px",
+                maxWidth: "500px",
+                minWidth: "500px",
               },
               filter: (node: any) => {
                 // Skip script tags and other non-visual elements
-                if (node.tagName === 'SCRIPT' || node.tagName === 'STYLE') {
+                if (node.tagName === "SCRIPT" || node.tagName === "STYLE") {
                   return false;
                 }
                 return true;
               },
-              bgcolor: '#ffffff',
-              cacheBust: true
+              bgcolor: "#ffffff",
+              cacheBust: true,
             });
 
             // Restore original scaling
@@ -4633,106 +4885,142 @@ const MemberDetailPage = () => {
             }
 
             // Create a higher quality version by drawing to a scaled canvas
-            const img = document.createElement('img');
+            const img = document.createElement("img");
             img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
               const scaleFactor = 3; // 3x for higher quality instead of 2x
-              
+
               canvas.width = 500 * scaleFactor;
               canvas.height = img.height * scaleFactor;
-              
+
               if (ctx) {
                 // Enable high-quality image smoothing
                 ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                
+                ctx.imageSmoothingQuality = "high";
+
                 // Fill with white background
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = "#ffffff";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
+
                 // Draw the image scaled up with better quality
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
+
                 // Convert to blob and download with maximum quality
-                canvas.toBlob((blob) => {
-                  if (blob) {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'email-signature-high-quality.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }
-                }, 'image/png', 1.0);
+                canvas.toBlob(
+                  (blob) => {
+                    if (blob) {
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "email-signature-high-quality.png";
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }
+                  },
+                  "image/png",
+                  1.0,
+                );
               }
             };
-            
+
             img.onerror = () => {
-              console.error('Failed to create high-quality image, downloading original');
+              console.error(
+                "Failed to create high-quality image, downloading original",
+              );
               // Fallback to direct download if high-quality fails
-              const a = document.createElement('a');
+              const a = document.createElement("a");
               a.href = dataUrl;
-              a.download = 'email-signature.png';
+              a.download = "email-signature.png";
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
             };
-            
+
             img.src = dataUrl;
-            
           } catch (error) {
-            console.error('Error downloading email signature:', error);
+            console.error("Error downloading email signature:", error);
             // Show user-friendly error message
-            alert('Download sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            alert("Download sırasında bir hata oluştu. Lütfen tekrar deneyin.");
           } finally {
             setIsDownloading(false);
           }
         };
 
-        return(
+        return (
           <div className="flex flex-col items-center justify-center h-full p-8 bg-gradient-to-br from-blue-50 to-indigo-100">
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                 <MailIcon className="w-8 h-8 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Signature Ready</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Email Signature Ready
+              </h2>
               <p className="text-gray-600 max-w-md">
-                Your professional email signature has been generated and is ready to download.
+                Your professional email signature has been generated and is
+                ready to download.
               </p>
             </div>
 
             {/* Preview Card */}
-           
+
             {/* Download Section */}
             <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Download Your Signature</h3>
-              
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                Download Your Signature
+              </h3>
+
               {/* Download Button */}
               <button
                 onClick={downloadEmailSignature}
                 disabled={isDownloading}
                 className={`w-full font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform flex items-center justify-center space-x-3 shadow-lg ${
-                  isDownloading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl'
+                  isDownloading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl"
                 } text-white`}
               >
                 {isDownloading ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <span>İndiriliyor...</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
                     </svg>
                     <span>Download as PNG</span>
                   </>
@@ -4756,11 +5044,9 @@ const MemberDetailPage = () => {
               </div>
 
               {/* Alternative formats */}
-              
             </div>
 
             {/* Footer */}
-           
           </div>
         );
 
@@ -4769,7 +5055,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">center live Preview</p>
+                <p className="text-[#828282] font-semibold">
+                  center live Preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -4842,60 +5130,59 @@ const MemberDetailPage = () => {
                   </div>
 
                   {/* Contact button */}
-                 <div className="flex gap-2 mt-5">
+                  <div className="flex gap-2 mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <FaMessage className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <FaMessage className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - horizontal layout */}
@@ -4903,7 +5190,7 @@ const MemberDetailPage = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                       {linkOrder
                         .filter(
-                          (key) => activeLinks[key as keyof typeof activeLinks]
+                          (key) => activeLinks[key as keyof typeof activeLinks],
                         )
                         .slice(0, 6) // Limit to 6 links for better display
                         .map((linkKey) => {
@@ -4912,7 +5199,8 @@ const MemberDetailPage = () => {
                             linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
 
                           // Determine which icon to show based on link key
-                          const linkImageKey = linkKey as keyof typeof linkImages;
+                          const linkImageKey =
+                            linkKey as keyof typeof linkImages;
                           if (linkImages[linkImageKey]) {
                             iconComponent = (
                               <div className="relative w-5 h-5">
@@ -4955,14 +5243,14 @@ const MemberDetailPage = () => {
                     </div>
                     {/* Show more button if there are more than 6 links */}
                     {linkOrder.filter(
-                      (key) => activeLinks[key as keyof typeof activeLinks]
+                      (key) => activeLinks[key as keyof typeof activeLinks],
                     ).length > 6 && (
-                        <div className="mt-2 text-center">
-                          <button className="text-[10px] text-blue-600 font-medium">
-                            Show More
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-2 text-center">
+                        <button className="text-[10px] text-blue-600 font-medium">
+                          Show More
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4973,7 +5261,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">left live Preview</p>
+                <p className="text-[#828282] font-semibold">
+                  left live Preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -5034,12 +5324,8 @@ const MemberDetailPage = () => {
                 {/* Content section */}
                 <div className="mt-12 px-5 flex flex-col items-left text-left">
                   <h3 className="font-bold text-sm">{formData.name}</h3>
-                  <p className="text-xs mt-1">
-                    {formData.jobTitle}
-                  </p>
-                  <p className="text-xs mt-1">
-                    {formData.company}
-                  </p>
+                  <p className="text-xs mt-1">{formData.jobTitle}</p>
+                  <p className="text-xs mt-1">{formData.company}</p>
                   <p className="text-xs mt-1">{formData.location}</p>
 
                   <div className="mt-4 w-full">
@@ -5050,59 +5336,58 @@ const MemberDetailPage = () => {
 
                   {/* Contact button */}
                   <div className="flex gap-2 mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <FaMessage className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <FaMessage className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - scrollable container */}
@@ -5111,15 +5396,18 @@ const MemberDetailPage = () => {
                       <div className="max-h-[200px] overflow-y-auto pr-1 space-y-2 modern-scrollbar card-links-scrollbar">
                         {linkOrder
                           .filter(
-                            (key) => activeLinks[key as keyof typeof activeLinks]
+                            (key) =>
+                              activeLinks[key as keyof typeof activeLinks],
                           )
                           .map((linkKey) => {
                             let iconComponent;
                             const linkName =
-                              linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
+                              linkKey.charAt(0).toUpperCase() +
+                              linkKey.slice(1);
 
                             // Determine which icon to show based on link key
-                            const linkImageKey = linkKey as keyof typeof linkImages;
+                            const linkImageKey =
+                              linkKey as keyof typeof linkImages;
                             if (linkImages[linkImageKey]) {
                               iconComponent = (
                                 <div className="relative w-5 h-5">
@@ -5161,20 +5449,24 @@ const MemberDetailPage = () => {
                           })}
                       </div>
                       {/* Gradient fade effect at the bottom when content overflows */}
-                    </div>) : (
+                    </div>
+                  ) : (
                     <div className="mt-4 w-full  relative">
                       <div className="max-h-[200px] overflow-y-auto  space-y-2 hidden-scrollbar">
                         {linkOrder
                           .filter(
-                            (key) => activeLinks[key as keyof typeof activeLinks]
+                            (key) =>
+                              activeLinks[key as keyof typeof activeLinks],
                           )
                           .map((linkKey) => {
                             let iconComponent;
                             const linkName =
-                              linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
+                              linkKey.charAt(0).toUpperCase() +
+                              linkKey.slice(1);
 
                             // Determine which icon to show based on link key
-                            const linkImageKey = linkKey as keyof typeof linkImages;
+                            const linkImageKey =
+                              linkKey as keyof typeof linkImages;
                             if (linkImages[linkImageKey]) {
                               iconComponent = (
                                 <div className="relative w-5 h-5">
@@ -5215,8 +5507,12 @@ const MemberDetailPage = () => {
                                   {iconComponent}
                                 </div>
                                 <div className="flex flex-col text-white">
-                                  <span className="text-xs font-medium">{userLinks[linkKey]?.title || ""}</span>
-                                  <span className="text-sm opacity-80">{userLinks[linkKey]?.username || ""}</span> 
+                                  <span className="text-xs font-medium">
+                                    {userLinks[linkKey]?.title || ""}
+                                  </span>
+                                  <span className="text-sm opacity-80">
+                                    {userLinks[linkKey]?.username || ""}
+                                  </span>
                                 </div>
                               </div>
                             );
@@ -5234,7 +5530,9 @@ const MemberDetailPage = () => {
           return (
             <div className="flex flex-col items-center h-full">
               <div className="text-xs flex flex-col space-y-5 text-center">
-                <p className="text-[#828282] font-semibold">Card live preview</p>
+                <p className="text-[#828282] font-semibold">
+                  Card live preview
+                </p>
                 <Link
                   className="text-[#29AEF8] font-medium"
                   href={`/connect/${memberId}?index=${index}`}
@@ -5246,14 +5544,15 @@ const MemberDetailPage = () => {
               <div
                 className="w-64 h-[520px] flex flex-col rounded-[25px] mt-4 border overflow-auto scrollbar-hide border-[rgb(189,189,189)]"
                 style={{
-                  backgroundColor: selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme,
+                  backgroundColor:
+                    selectedCardTheme === "transparent"
+                      ? "#BFDBFE"
+                      : selectedCardTheme,
                   fontFamily: selectedFont,
                 }}
               >
                 {/* Full profile picture container with background */}
-                <div
-                  className="w-full relative"
-                >
+                <div className="w-full relative">
                   {/* Profile image with lower z-index */}
                   <div className="relative w-full h-72 z-10">
                     <Image
@@ -5268,7 +5567,7 @@ const MemberDetailPage = () => {
                   <div
                     className="absolute inset-0 z-20"
                     style={{
-                      background: `linear-gradient(to top, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 0%, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 1%, rgba(255,255,255,0) 50%)`
+                      background: `linear-gradient(to top, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 0%, ${selectedCardTheme === "transparent" ? "#BFDBFE" : selectedCardTheme} 1%, rgba(255,255,255,0) 50%)`,
                     }}
                   />
                   {/* Company logo on bottom right */}
@@ -5287,75 +5586,68 @@ const MemberDetailPage = () => {
                 {/* Content section */}
                 <div className="px-5 flex flex-col items-start text-left">
                   <h3 className="font-bold text-xl mb-1">{formData.name}</h3>
-                  <p className="text-sm mb-0.5">
-                    {formData.jobTitle}
-                  </p>
-                  <p className="text-xs mb-0.5">
-                    {formData.company}
-                  </p>
+                  <p className="text-sm mb-0.5">{formData.jobTitle}</p>
+                  <p className="text-xs mb-0.5">{formData.company}</p>
                   <p className="text-xs">{formData.location}</p>
 
                   <div className="mt-3 w-full">
-                    <p className="text-xs leading-relaxed">
-                      {formData.bio}
-                    </p>
+                    <p className="text-xs leading-relaxed">{formData.bio}</p>
                   </div>
 
                   {/* Contact button */}
                   <div className="flex w-full justify-center gap-2 mt-5">
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const callValue = getValues("call");
+                        if (callValue) {
+                          window.open(`tel:${callValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("call")}
+                    >
+                      <MdCall className="text-lg" />
+                      <span className="text-xs">Call</span>
+                    </button>
 
-                   <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const callValue = getValues("call");
-                      if (callValue) {
-                        window.open(`tel:${callValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("call")}
-                  >
-                    <MdCall className="text-lg" />
-                    <span className="text-xs">Call</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                    >
+                      <FaMessage className="text-lg" />
+                      <span className="text-xs">Save</span>
+                    </button>
 
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                  >
-                    <FaMessage className="text-lg" />
-                    <span className="text-xs">Save</span>
-                  </button>
-
-                  <button
-                    className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
-                    style={{
-                      backgroundColor:
-                        selectedLinkColor === "transparent"
-                          ? "#3B82F6"
-                          : selectedLinkColor,
-                    }}
-                    onClick={() => {
-                      const emailValue = getValues("email");
-                      if (emailValue) {
-                        window.open(`mailto:${emailValue}`, '_self');
-                      }
-                    }}
-                    disabled={!getValues("email")}
-                  >
-                    <MdEmail className="text-lg" />
-                    <span className="text-xs">Mail</span>
-                  </button>
+                    <button
+                      className="flex-1 text-white py-3 px-4 flex justify-center items-center flex-col gap-1 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor:
+                          selectedLinkColor === "transparent"
+                            ? "#3B82F6"
+                            : selectedLinkColor,
+                      }}
+                      onClick={() => {
+                        const emailValue = getValues("email");
+                        if (emailValue) {
+                          window.open(`mailto:${emailValue}`, "_self");
+                        }
+                      }}
+                      disabled={!getValues("email")}
+                    >
+                      <MdEmail className="text-lg" />
+                      <span className="text-xs">Mail</span>
+                    </button>
                   </div>
 
                   {/* Social icons - horizontal layout for portrait mode */}
@@ -5363,7 +5655,7 @@ const MemberDetailPage = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                       {linkOrder
                         .filter(
-                          (key) => activeLinks[key as keyof typeof activeLinks]
+                          (key) => activeLinks[key as keyof typeof activeLinks],
                         )
                         .slice(0, 6) // Limit to 6 links for better display
                         .map((linkKey) => {
@@ -5372,7 +5664,8 @@ const MemberDetailPage = () => {
                             linkKey.charAt(0).toUpperCase() + linkKey.slice(1);
 
                           // Determine which icon to show based on link key
-                          const linkImageKey = linkKey as keyof typeof linkImages;
+                          const linkImageKey =
+                            linkKey as keyof typeof linkImages;
                           if (linkImages[linkImageKey]) {
                             iconComponent = (
                               <div className="relative w-5 h-5">
@@ -5415,14 +5708,14 @@ const MemberDetailPage = () => {
                     </div>
                     {/* Show more button if there are more than 6 links */}
                     {linkOrder.filter(
-                      (key) => activeLinks[key as keyof typeof activeLinks]
+                      (key) => activeLinks[key as keyof typeof activeLinks],
                     ).length > 6 && (
-                        <div className="mt-2 text-center">
-                          <button className="text-[10px] text-blue-600 font-medium">
-                            Show More
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-2 text-center">
+                        <button className="text-[10px] text-blue-600 font-medium">
+                          Show More
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -5446,11 +5739,12 @@ const MemberDetailPage = () => {
         );
 
       case "virtual-background":
-
         return (
           <div className="flex flex-col items-center h-full">
             <div className="text-xs flex flex-col space-y-5 text-center">
-              <p className="text-[#828282] font-semibold">Virtual background preview</p>
+              <p className="text-[#828282] font-semibold">
+                Virtual background preview
+              </p>
             </div>
             <div className="w-full mt-4 rounded-xl overflow-hidden shadow-sm relative virtual-background-preview">
               <div className="relative">
@@ -5464,13 +5758,19 @@ const MemberDetailPage = () => {
 
                 {/* Member info overlay at top left */}
                 {showName && (
-                  <div className={`absolute ${condensedView ? 'top-10 left-10' : 'top-4 left-4'} bg-white/80 backdrop-blur-sm rounded-md px-2 py-1 ${condensedView ? 'text-xs' : 'text-sm'}`}>
+                  <div
+                    className={`absolute ${condensedView ? "top-10 left-10" : "top-4 left-4"} bg-white/80 backdrop-blur-sm rounded-md px-2 py-1 ${condensedView ? "text-xs" : "text-sm"}`}
+                  >
                     <p className="font-medium"> {member.name}</p>
                     {showJobTitle && (
-                      <p className="text-xs text-gray-700">{member.jobTitle || data?.data?.userCard?.jobTitle}</p>
+                      <p className="text-xs text-gray-700">
+                        {member.jobTitle || data?.data?.userCard?.jobTitle}
+                      </p>
                     )}
                     {showCompany && (
-                      <p className="text-xs text-gray-700">{member.company || data?.data?.userCard?.company}</p>
+                      <p className="text-xs text-gray-700">
+                        {member.company || data?.data?.userCard?.company}
+                      </p>
                     )}
                     {showLocation && (
                       <p className="text-xs text-gray-700">{member.location}</p>
@@ -5480,7 +5780,9 @@ const MemberDetailPage = () => {
 
                 {/* QR Code overlay at top right */}
                 {showQrCode && (
-                  <div className={`absolute flex items-center justify-center flex-col ${condensedView ? 'top-10 right-10' : 'top-4 right-4'} bg-white rounded-lg p-0.5`}>
+                  <div
+                    className={`absolute flex items-center justify-center flex-col ${condensedView ? "top-10 right-10" : "top-4 right-4"} bg-white rounded-lg p-0.5`}
+                  >
                     <div className="w-[50px] h-[50px] flex items-center justify-center">
                       {qrCodeSvg ? (
                         <div
@@ -5488,9 +5790,7 @@ const MemberDetailPage = () => {
                           dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
                         />
                       ) : (
-                        <div 
-                          className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500"
-                        >
+                        <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
                           QR
                         </div>
                       )}
@@ -5506,96 +5806,130 @@ const MemberDetailPage = () => {
                 className="rounded-full py-5 flex items-center justify-center gap-2"
                 onClick={async () => {
                   // Import dom-to-image dynamically
-                  const domtoimage = (await import('dom-to-image')).default;
+                  const domtoimage = (await import("dom-to-image")).default;
 
                   // Get the virtual background preview element
-                  const element = document.querySelector('.virtual-background-preview');
+                  const element = document.querySelector(
+                    ".virtual-background-preview",
+                  );
                   if (element) {
                     // Create a loading state or notification
                     showNotification("Preparing download...", "success");
 
                     try {
                       // Get the background image URL
-                      const backgroundUrl = selectedVirtualBackground || `/virtualBackground/1.jpeg`;
-                      
+                      const backgroundUrl =
+                        selectedVirtualBackground ||
+                        `/virtualBackground/1.jpeg`;
+
                       // Create a new canvas to combine background and overlay
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
-                      
+                      const canvas = document.createElement("canvas");
+                      const ctx = canvas.getContext("2d");
+
                       // Set canvas size (16:9 aspect ratio)
                       canvas.width = 1920;
                       canvas.height = 1080;
-                      
+
                       // Load the background image
-                      const backgroundImg = document.createElement('img') as HTMLImageElement;
-                      backgroundImg.crossOrigin = 'anonymous';
-                      
+                      const backgroundImg = document.createElement(
+                        "img",
+                      ) as HTMLImageElement;
+                      backgroundImg.crossOrigin = "anonymous";
+
                       backgroundImg.onload = async () => {
                         // Draw background image
-                        ctx!.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-                        
+                        ctx!.drawImage(
+                          backgroundImg,
+                          0,
+                          0,
+                          canvas.width,
+                          canvas.height,
+                        );
+
                         // Get the relative container for overlays
-                        const relativeContainer = element.querySelector('.relative');
+                        const relativeContainer =
+                          element.querySelector(".relative");
                         if (relativeContainer) {
                           try {
                             // Get the original dimensions
-                            const containerRect = relativeContainer.getBoundingClientRect();
-                            const scale = Math.max(canvas.width / containerRect.width, canvas.height / containerRect.height);
-                            
+                            const containerRect =
+                              relativeContainer.getBoundingClientRect();
+                            const scale = Math.max(
+                              canvas.width / containerRect.width,
+                              canvas.height / containerRect.height,
+                            );
+
                             // Capture the entire relative container (background + all overlays) with high quality
-                            const containerDataUrl = await domtoimage.toPng(relativeContainer as HTMLElement, {
-                              quality: 1.0,
-                              bgcolor: 'transparent',
-                              width: containerRect.width * scale * 2, // Double resolution for better quality
-                              height: containerRect.height * scale * 2,
-                              style: {
-                                transform: `scale(${scale * 2})`,
-                                transformOrigin: 'top left'
+                            const containerDataUrl = await domtoimage.toPng(
+                              relativeContainer as HTMLElement,
+                              {
+                                quality: 1.0,
+                                bgcolor: "transparent",
+                                width: containerRect.width * scale * 2, // Double resolution for better quality
+                                height: containerRect.height * scale * 2,
+                                style: {
+                                  transform: `scale(${scale * 2})`,
+                                  transformOrigin: "top left",
+                                },
+                                filter: (node: any) => {
+                                  // Include all nodes except the background image itself
+                                  if (
+                                    node.tagName === "IMG" &&
+                                    node.alt ===
+                                      "Selected virtual background preview"
+                                  ) {
+                                    return false;
+                                  }
+                                  return true;
+                                },
                               },
-                              filter: (node: any) => {
-                                // Include all nodes except the background image itself
-                                if (node.tagName === 'IMG' && node.alt === 'Selected virtual background preview') {
-                                  return false;
-                                }
-                                return true;
-                              }
-                            });
-                            
+                            );
+
                             // Load overlay image
-                            const overlayImg = document.createElement('img') as HTMLImageElement;
+                            const overlayImg = document.createElement(
+                              "img",
+                            ) as HTMLImageElement;
                             overlayImg.onload = () => {
                               // Calculate scale factor
-                              const elementRect = relativeContainer.getBoundingClientRect();
+                              const elementRect =
+                                relativeContainer.getBoundingClientRect();
                               const scaleX = canvas.width / elementRect.width;
                               const scaleY = canvas.height / elementRect.height;
-                              
+
                               // Draw overlay on canvas with proper scaling
                               ctx!.drawImage(
-                                overlayImg, 
-                                0, 
-                                0, 
-                                elementRect.width * scaleX, 
-                                elementRect.height * scaleY
+                                overlayImg,
+                                0,
+                                0,
+                                elementRect.width * scaleX,
+                                elementRect.height * scaleY,
                               );
-                              
+
                               // Convert canvas to blob and download
                               canvas.toBlob((blob) => {
                                 if (blob) {
-                                  const downloadLink = document.createElement('a');
+                                  const downloadLink =
+                                    document.createElement("a");
                                   downloadLink.href = URL.createObjectURL(blob);
                                   downloadLink.download = `virtual-background-${memberId}.png`;
                                   document.body.appendChild(downloadLink);
                                   downloadLink.click();
                                   document.body.removeChild(downloadLink);
                                   URL.revokeObjectURL(downloadLink.href);
-                                  
-                                  showNotification("Background with overlay downloaded successfully!", "success");
+
+                                  showNotification(
+                                    "Background with overlay downloaded successfully!",
+                                    "success",
+                                  );
                                 }
-                              }, 'image/png');
+                              }, "image/png");
                             };
                             overlayImg.src = containerDataUrl;
                           } catch (overlayError) {
-                            console.error("Error capturing overlay:", overlayError);
+                            console.error(
+                              "Error capturing overlay:",
+                              overlayError,
+                            );
                             // Fallback: try to capture individual overlay elements
                             await captureIndividualOverlays();
                           }
@@ -5604,108 +5938,143 @@ const MemberDetailPage = () => {
                           downloadBackgroundOnly();
                         }
                       };
-                      
+
                       // Function to capture individual overlay elements
                       const captureIndividualOverlays = async () => {
                         try {
                           // Get all absolute positioned overlay elements
-                          const overlayElements = element.querySelectorAll('.absolute');
-                          
+                          const overlayElements =
+                            element.querySelectorAll(".absolute");
+
                           for (const overlay of overlayElements) {
                             try {
                               // Get overlay dimensions for high-quality capture
-                              const overlayRect = overlay.getBoundingClientRect();
-                              const overlayScale = Math.max(2, canvas.width / element.getBoundingClientRect().width);
-                              
-                              const overlayDataUrl = await domtoimage.toPng(overlay as HTMLElement, {
-                                quality: 1.0,
-                                bgcolor: 'transparent',
-                                width: overlayRect.width * overlayScale,
-                                height: overlayRect.height * overlayScale,
-                                style: {
-                                  transform: `scale(${overlayScale})`,
-                                  transformOrigin: 'top left'
-                                }
-                              });
-                              
-                              const overlayImg = document.createElement('img') as HTMLImageElement;
+                              const overlayRect =
+                                overlay.getBoundingClientRect();
+                              const overlayScale = Math.max(
+                                2,
+                                canvas.width /
+                                  element.getBoundingClientRect().width,
+                              );
+
+                              const overlayDataUrl = await domtoimage.toPng(
+                                overlay as HTMLElement,
+                                {
+                                  quality: 1.0,
+                                  bgcolor: "transparent",
+                                  width: overlayRect.width * overlayScale,
+                                  height: overlayRect.height * overlayScale,
+                                  style: {
+                                    transform: `scale(${overlayScale})`,
+                                    transformOrigin: "top left",
+                                  },
+                                },
+                              );
+
+                              const overlayImg = document.createElement(
+                                "img",
+                              ) as HTMLImageElement;
                               await new Promise((resolve) => {
                                 overlayImg.onload = () => {
                                   // Get overlay position and size
-                                  const overlayRect = overlay.getBoundingClientRect();
-                                  const containerRect = element.getBoundingClientRect();
-                                  
+                                  const overlayRect =
+                                    overlay.getBoundingClientRect();
+                                  const containerRect =
+                                    element.getBoundingClientRect();
+
                                   // Calculate relative position and scale
-                                  const relativeX = overlayRect.left - containerRect.left;
-                                  const relativeY = overlayRect.top - containerRect.top;
-                                  const scaleX = canvas.width / containerRect.width;
-                                  const scaleY = canvas.height / containerRect.height;
-                                  
+                                  const relativeX =
+                                    overlayRect.left - containerRect.left;
+                                  const relativeY =
+                                    overlayRect.top - containerRect.top;
+                                  const scaleX =
+                                    canvas.width / containerRect.width;
+                                  const scaleY =
+                                    canvas.height / containerRect.height;
+
                                   // Draw overlay on canvas
                                   ctx!.drawImage(
                                     overlayImg,
                                     relativeX * scaleX,
                                     relativeY * scaleY,
                                     overlayRect.width * scaleX,
-                                    overlayRect.height * scaleY
+                                    overlayRect.height * scaleY,
                                   );
                                   resolve(true);
                                 };
                                 overlayImg.src = overlayDataUrl;
                               });
                             } catch (individualError) {
-                              console.error("Error capturing individual overlay:", individualError);
+                              console.error(
+                                "Error capturing individual overlay:",
+                                individualError,
+                              );
                             }
                           }
-                          
+
                           // Download the final result
                           canvas.toBlob((blob) => {
                             if (blob) {
-                              const downloadLink = document.createElement('a');
+                              const downloadLink = document.createElement("a");
                               downloadLink.href = URL.createObjectURL(blob);
                               downloadLink.download = `virtual-background-${memberId}.png`;
                               document.body.appendChild(downloadLink);
                               downloadLink.click();
                               document.body.removeChild(downloadLink);
                               URL.revokeObjectURL(downloadLink.href);
-                              
-                              showNotification("Background with overlay downloaded successfully!", "success");
+
+                              showNotification(
+                                "Background with overlay downloaded successfully!",
+                                "success",
+                              );
                             }
-                          }, 'image/png');
+                          }, "image/png");
                         } catch (error) {
-                          console.error("Error in individual overlay capture:", error);
+                          console.error(
+                            "Error in individual overlay capture:",
+                            error,
+                          );
                           downloadBackgroundOnly();
                         }
                       };
-                      
+
                       // Function to download background only
                       const downloadBackgroundOnly = () => {
                         canvas.toBlob((blob) => {
                           if (blob) {
-                            const downloadLink = document.createElement('a');
+                            const downloadLink = document.createElement("a");
                             downloadLink.href = URL.createObjectURL(blob);
                             downloadLink.download = `virtual-background-${memberId}.png`;
                             document.body.appendChild(downloadLink);
                             downloadLink.click();
                             document.body.removeChild(downloadLink);
                             URL.revokeObjectURL(downloadLink.href);
-                            
-                            showNotification("Background downloaded successfully!", "success");
+
+                            showNotification(
+                              "Background downloaded successfully!",
+                              "success",
+                            );
                           }
-                        }, 'image/png');
+                        }, "image/png");
                       };
-                      
+
                       backgroundImg.onerror = () => {
-                        showNotification("Failed to load background image", "error");
+                        showNotification(
+                          "Failed to load background image",
+                          "error",
+                        );
                       };
-                      
+
                       // Load the background image
-                      backgroundImg.src = backgroundUrl.startsWith('/') ? 
-                        `${window.location.origin}${backgroundUrl}` : backgroundUrl;
-                        
+                      backgroundImg.src = backgroundUrl.startsWith("/")
+                        ? `${window.location.origin}${backgroundUrl}`
+                        : backgroundUrl;
                     } catch (error) {
                       console.error("Error capturing background:", error);
-                      showNotification("Failed to download background", "error");
+                      showNotification(
+                        "Failed to download background",
+                        "error",
+                      );
                     }
                   }
                 }}
@@ -5716,8 +6085,8 @@ const MemberDetailPage = () => {
             </div>
           </div>
         );
-     
-        case "qr-code":
+
+      case "qr-code":
         return (
           <motion.div
             key="qr-code"
@@ -5731,12 +6100,15 @@ const MemberDetailPage = () => {
             <div className="space-y-4">
               <QrCodePreview
                 userId={data?.data?.userCard?.user?.userId || memberId || ""}
-                userName={data?.data?.userCard?.name || data?.data?.userCard?.user?.name || "Unknown"}
+                userName={
+                  data?.data?.userCard?.name ||
+                  data?.data?.userCard?.user?.name ||
+                  "Unknown"
+                }
                 qrCodePath={data?.data?.userCard?.qrCodeUrl}
                 index={index}
                 selectedColor={selectedQrColor}
               />
-              
             </div>
           </motion.div>
         );
@@ -5775,8 +6147,9 @@ const MemberDetailPage = () => {
     <div className="w-full h-screen flex flex-col">
       {notification.visible && (
         <div
-          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg ${notification.type === "success" ? "bg-green-600" : "bg-red-600"
-            } text-white font-medium transition-all duration-500 transform translate-y-0 opacity-100`}
+          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg ${
+            notification.type === "success" ? "bg-green-600" : "bg-red-600"
+          } text-white font-medium transition-all duration-500 transform translate-y-0 opacity-100`}
         >
           {notification.type === "success" ? (
             <div className="flex items-center gap-2">
@@ -5802,7 +6175,7 @@ const MemberDetailPage = () => {
                 className="rounded-full"
                 asChild
               >
-                <Link href="/team/members">
+                <Link href={backHref}>
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
               </Button>{" "}
@@ -5829,7 +6202,10 @@ const MemberDetailPage = () => {
               {/* Card Selection Button */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex rounded-full items-center gap-2 pr-2 pl-3 py-1 h-auto">
+                  <Button
+                    variant="outline"
+                    className="flex rounded-full items-center gap-2 pr-2 pl-3 py-1 h-auto"
+                  >
                     <div className="flex items-center gap-2">
                       <div className="relative rounded-full h-8 w-8">
                         <Image
@@ -5867,7 +6243,9 @@ const MemberDetailPage = () => {
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">{member.cardName}</span>
-                        <span className="text-sm text-muted-foreground">{member.jobTitle}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {member.jobTitle}
+                        </span>
                       </div>
                       {true && (
                         <div className="absolute flex flex-col items-center justify-center gap-2 right-4">
@@ -5885,41 +6263,121 @@ const MemberDetailPage = () => {
                   </div>
 
                   {/* Mock data for other cards */}
-                  {user?.userCard.filter((card: {
-                    cardId: any; cardName: any;
-                  }) => card.cardId !== member._id).map((card: {
-                    cardId: any;
-                    cardProfileImage: string; cardName: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; cardJob: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
-                  }, idx: React.Key | null | undefined) => (
-                    <div key={idx} onClick={() => window.location.href = `/team/members/${memberId}?index=${user?.userCard.findIndex((c: { cardId: any; }) => c.cardId === card.cardId)}`} className="p-4 hover:bg-slate-50 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-10 w-10 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                          <Image
-                            src={card.cardProfileImage || "/defaultpp.png"}
-                            alt="Card Profile"
-                            className="rounded-full object-cover border"
-                            fill
-                            sizes="(max-width: 768px) 100vw, 40px"
-                          />
+                  {cardOwner?.userCard
+                    ?.filter(
+                      (card: { cardId: any; cardName: any }) =>
+                        card.cardId !== member._id,
+                    )
+                    .map(
+                      (
+                        card: {
+                          cardId: any;
+                          cardProfileImage: string;
+                          cardName:
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactElement<
+                                unknown,
+                                string | React.JSXElementConstructor<any>
+                              >
+                            | Iterable<React.ReactNode>
+                            | React.ReactPortal
+                            | Promise<
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | React.ReactPortal
+                                | React.ReactElement<
+                                    unknown,
+                                    string | React.JSXElementConstructor<any>
+                                  >
+                                | Iterable<React.ReactNode>
+                                | null
+                                | undefined
+                              >
+                            | null
+                            | undefined;
+                          cardJob:
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactElement<
+                                unknown,
+                                string | React.JSXElementConstructor<any>
+                              >
+                            | Iterable<React.ReactNode>
+                            | React.ReactPortal
+                            | Promise<
+                                | string
+                                | number
+                                | bigint
+                                | boolean
+                                | React.ReactPortal
+                                | React.ReactElement<
+                                    unknown,
+                                    string | React.JSXElementConstructor<any>
+                                  >
+                                | Iterable<React.ReactNode>
+                                | null
+                                | undefined
+                              >
+                            | null
+                            | undefined;
+                        },
+                        idx: React.Key | null | undefined,
+                      ) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            const targetIndex = cardOwner?.userCard.findIndex(
+                              (c: { cardId: any }) => c.cardId === card.cardId,
+                            );
+                            window.location.href = isAdminEditor
+                              ? `/admin/dashboard/users/${memberId}/cards/${targetIndex}`
+                              : `/team/members/${memberId}?index=${targetIndex}`;
+                          }}
+                          className="p-4 hover:bg-slate-50 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-10 w-10 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                              <Image
+                                src={card.cardProfileImage || "/defaultpp.png"}
+                                alt="Card Profile"
+                                className="rounded-full object-cover border"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 40px"
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {card.cardName}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {card.cardJob}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{card.cardName}</span>
-                          <span className="text-sm text-muted-foreground">{card.cardJob}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      ),
+                    )}
 
                   {/* Create New Card Button */}
                   <div className="p-4 border-t">
-                    <Button onClick={handleCreateNewCard} className="w-full rounded-full" variant="default">
+                    <Button
+                      onClick={handleCreateNewCard}
+                      className="w-full rounded-full"
+                      variant="default"
+                    >
                       <PlusCircle className="h-4 w-4 mr-2" />
                       Create New Card
                     </Button>
                   </div>
                 </PopoverContent>
               </Popover>
-
             </div>
           </div>
           {/* Card that fills the remaining space with a small bottom margin */}
@@ -5938,7 +6396,7 @@ const MemberDetailPage = () => {
                       <nav className="space-y-1">
                         {navItems
                           .filter((item) =>
-                            ["about", "links"].includes(item.value)
+                            ["about", "links"].includes(item.value),
                           )
                           .map((item) => {
                             const isActive = activeTab === item.value;
@@ -5950,7 +6408,7 @@ const MemberDetailPage = () => {
                                   "flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
                                   isActive
                                     ? "bg-black text-white"
-                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                                 )}
                               >
                                 <item.icon className="h-3.5 w-3.5" />
@@ -5985,8 +6443,8 @@ const MemberDetailPage = () => {
                         {navItems
                           .filter((item) =>
                             ["lead-capture-form", "follow-up-email"].includes(
-                              item.value
-                            )
+                              item.value,
+                            ),
                           )
                           .map((item) => {
                             const isActive = activeTab === item.value;
@@ -5998,7 +6456,7 @@ const MemberDetailPage = () => {
                                   "flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
                                   isActive
                                     ? "bg-black text-white"
-                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                                 )}
                               >
                                 <item.icon className="h-3.5 w-3.5" />
@@ -6040,11 +6498,15 @@ const MemberDetailPage = () => {
                                 "accessories",
                               ].includes(item.value) &&
                               (item.value !== "virtual-background" ||
-                                !hasPermission(BigInt(userperm), BitPerms.virtualbackground)
-                              ) &&
+                                !hasPermission(
+                                  BigInt(userperm),
+                                  BitPerms.virtualbackground,
+                                )) &&
                               (item.value !== "email-signature" ||
-                                !hasPermission(BigInt(userperm), BitPerms.emailsign)
-                              )
+                                !hasPermission(
+                                  BigInt(userperm),
+                                  BitPerms.emailsign,
+                                ))
                             );
                           })
                           .map((item) => {
@@ -6058,7 +6520,7 @@ const MemberDetailPage = () => {
                                   "flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
                                   isActive
                                     ? "bg-black text-white"
-                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                                 )}
                               >
                                 <item.icon className="h-3.5 w-3.5" />
@@ -6110,7 +6572,6 @@ const MemberDetailPage = () => {
                     </div>
                   </div>
                 </div>
-
               </div>{" "}
               {/* Content - 3/6 width */}
               <div className="w-full md:w-3/6 p-6 h-full">
@@ -6185,7 +6646,7 @@ const MemberDetailPage = () => {
                   title:
                     linkTitle ||
                     currentEditingLink.charAt(0).toUpperCase() +
-                    currentEditingLink.slice(1),
+                      currentEditingLink.slice(1),
                   url: linkUrl,
                 };
 

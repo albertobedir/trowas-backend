@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password } = validatedFields.data;
+    const { name, email, password, accountType } = validatedFields.data;
 
     await dbConnect();
 
@@ -50,6 +50,7 @@ export async function POST(req: Request) {
       password: hashedPassword,
       username,
       uniqueUrlName: username,
+      accountType,
       roles: { userRole: "user" },
     });
 
@@ -99,23 +100,6 @@ You both just connected via RollCard and this is an automatic email intro.
       },
     });
 
-    // Takım oluştur
-    const newTeam = await Team.create({
-      name: `${user.name}'s Team`,
-      owner: user._id,
-      members: [user._id],
-      teamSettings: {
-        logo: "/babel.png",
-        allowedEmailDomain: user.email.slice(user.email.indexOf("@")),
-      },
-    });
-
-    // Kullanıcıya takım ve kart bilgilerini ekle
-    user.team = newTeam._id;
-    user.subTeams = [];
-    user.roles.teamRole = "owner";
-    user.permissions.teamPermission = 6;
-
     user.userCard = [
       {
         cardId: userCard._id,
@@ -123,6 +107,23 @@ You both just connected via RollCard and this is an automatic email intro.
         cardProfileImage: "/defaultpp.png",
       },
     ];
+
+    if (accountType === "corporate") {
+      const newTeam = await Team.create({
+        name: `${user.name}'s Team`,
+        owner: user._id,
+        members: [user._id],
+        teamSettings: {
+          logo: "/babel.png",
+          allowedEmailDomain: user.email.slice(user.email.indexOf("@")),
+        },
+      });
+
+      user.team = newTeam._id;
+      user.subTeams = [];
+      user.roles.teamRole = "owner";
+      user.permissions.teamPermission = 6;
+    }
 
     await user.save();
 

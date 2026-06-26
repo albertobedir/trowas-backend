@@ -5,19 +5,26 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  EyeIcon, 
-  EyeOffIcon, 
-  LogIn, 
-  Mail, 
-  Lock, 
+import {
+  EyeIcon,
+  EyeOffIcon,
+  LogIn,
+  Mail,
+  Lock,
   Sparkles,
   Shield,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
@@ -27,26 +34,26 @@ const FloatingParticles = () => {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const [isClient, setIsClient] = useState(false);
   const particles = Array.from({ length: 15 }, (_, i) => i);
-  
+
   useEffect(() => {
     setIsClient(true);
-    
+
     const updateDimensions = () => {
       setDimensions({
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       });
     };
 
     updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
   if (!isClient) {
     return null;
   }
-  
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {particles.map((particle) => (
@@ -122,12 +129,12 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
@@ -135,14 +142,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || "Login failed");
       }
 
-      router.push('/');
+      router.push("/");
       setLoading(false);
-      
     } catch (err) {
-      setError("Giriş başarısız. Lütfen bilgilerinizi kontrol edip tekrar deneyin.");
+      setError(
+        "Giriş başarısız. Lütfen bilgilerinizi kontrol edip tekrar deneyin.",
+      );
       setLoading(false);
       console.error(err);
     }
@@ -209,7 +217,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <AnimatedBackground />
       <FloatingParticles />
-      
+
       <motion.div
         className="w-full max-w-md p-4 relative z-10"
         variants={containerVariants}
@@ -218,7 +226,7 @@ export default function LoginPage() {
       >
         {/* Header Section */}
         <motion.div className="text-center mb-8" variants={itemVariants}>
-          <motion.div 
+          <motion.div
             className="flex justify-center mb-6"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
@@ -230,37 +238,39 @@ export default function LoginPage() {
                 transition={{ duration: 3, repeat: Infinity }}
               />
               {!logoError ? (
-                  <Image 
-                    src="/company_logo.png" 
-                    alt="Şirket Logosu" 
-                    width={120}
-                    height={120}
-                    className="h-12 w-auto object-contain"
-                    onError={(e) => {
-                      console.log("Company logo failed, trying default...");
-                      e.currentTarget.src = "/defaultcompanylogo.png";
-                      e.currentTarget.onerror = () => {
-                        console.log("Default logo also failed, showing text logo");
-                        setLogoError(true);
-                      };
-                    }}
-                  />
-                ) : (
-                  <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                    COMPANY
-                  </div>
-                )}
+                <Image
+                  src="/company_logo.png"
+                  alt="Şirket Logosu"
+                  width={120}
+                  height={120}
+                  className="h-12 w-auto object-contain"
+                  onError={(e) => {
+                    console.log("Company logo failed, trying default...");
+                    e.currentTarget.src = "/defaultcompanylogo.png";
+                    e.currentTarget.onerror = () => {
+                      console.log(
+                        "Default logo also failed, showing text logo",
+                      );
+                      setLogoError(true);
+                    };
+                  }}
+                />
+              ) : (
+                <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  COMPANY
+                </div>
+              )}
             </div>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-3"
             variants={itemVariants}
           >
             Hoş Geldiniz
           </motion.h1>
-          
-          <motion.div 
+
+          <motion.div
             className="flex items-center justify-center space-x-2 text-gray-600"
             variants={itemVariants}
           >
@@ -276,16 +286,16 @@ export default function LoginPage() {
             {/* Card glow effect */}
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"
-              animate={{ 
+              animate={{
                 background: [
                   "linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(168,85,247,0.1) 50%, rgba(236,72,153,0.1) 100%)",
                   "linear-gradient(90deg, rgba(236,72,153,0.1) 0%, rgba(59,130,246,0.1) 50%, rgba(168,85,247,0.1) 100%)",
-                  "linear-gradient(90deg, rgba(168,85,247,0.1) 0%, rgba(236,72,153,0.1) 50%, rgba(59,130,246,0.1) 100%)"
-                ]
+                  "linear-gradient(90deg, rgba(168,85,247,0.1) 0%, rgba(236,72,153,0.1) 50%, rgba(59,130,246,0.1) 100%)",
+                ],
               }}
               transition={{ duration: 5, repeat: Infinity }}
             />
-            
+
             <CardHeader className="space-y-1 pb-6 relative z-10">
               <CardTitle className="text-2xl flex items-center justify-center space-x-3">
                 <motion.div
@@ -321,12 +331,15 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Email Field */}
-                <motion.div 
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                  >
                     <Mail className="h-4 w-4 text-blue-500" />
                     <span>E-posta adresi</span>
                   </label>
@@ -344,7 +357,9 @@ export default function LoginPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: email ? "rgba(59,130,246,0.3)" : "transparent",
+                        borderColor: email
+                          ? "rgba(59,130,246,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -352,18 +367,21 @@ export default function LoginPage() {
                 </motion.div>
 
                 {/* Password Field */}
-                <motion.div 
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <div className="flex justify-between items-center">
-                    <label htmlFor="password" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                    <label
+                      htmlFor="password"
+                      className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                    >
                       <Lock className="h-4 w-4 text-purple-500" />
                       <span>Şifre</span>
                     </label>
-                    <Link 
-                      href="#" 
+                    <Link
+                      href="#"
                       className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-200 hover:underline"
                     >
                       Şifremi unuttum
@@ -417,7 +435,9 @@ export default function LoginPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: password ? "rgba(168,85,247,0.3)" : "transparent",
+                        borderColor: password
+                          ? "rgba(168,85,247,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -429,8 +449,8 @@ export default function LoginPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
                     disabled={loading}
                   >
@@ -446,7 +466,11 @@ export default function LoginPage() {
                           <motion.div
                             className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
                           />
                           <span>Giriş yapılıyor...</span>
                         </motion.div>
@@ -463,7 +487,7 @@ export default function LoginPage() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    
+
                     {/* Button glow effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 rounded-lg"
@@ -474,52 +498,17 @@ export default function LoginPage() {
                 </motion.div>
               </form>
 
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4  text-gray-500 font-medium">veya</span>
-                </div>
-              </div>
-
               {/* Social Login Buttons */}
-              <div className="space-y-3">
-                {/* Google Login */}
-                <motion.button
-                  onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center space-x-3 px-4 py-2 border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 group"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  <FcGoogle className="h-5 w-5" />
-                  <span className="text-gray-700 font-medium group-hover:text-gray-900">Google ile devam et</span>
-                </motion.button>
-
-                {/* Apple Login */}
-                <motion.button
-                  onClick={handleAppleLogin}
-                  className="w-full flex items-center justify-center space-x-3 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-all duration-300 group"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  <FaApple className="h-5 w-5" />
-                  <span className="font-medium">Apple ile devam et</span>
-                </motion.button>
-              </div>
             </CardContent>
 
             <CardFooter className="flex justify-center border-t border-gray-100 p-6 relative z-10">
-              <motion.p 
+              <motion.p
                 className="text-sm text-gray-600 flex items-center space-x-1"
                 variants={itemVariants}
               >
                 <span>Henüz hesabınız yok mu?</span>
-                <Link 
-                  href="/auth/register" 
+                <Link
+                  href="/auth/register"
                   className="text-blue-600 hover:text-purple-600 font-medium transition-colors duration-200 hover:underline flex items-center space-x-1"
                 >
                   <span>Kaydol</span>
@@ -531,7 +520,6 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Security Badge */}
-        
       </motion.div>
     </div>
   );

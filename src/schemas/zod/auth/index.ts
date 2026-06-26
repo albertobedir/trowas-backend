@@ -11,6 +11,9 @@ export const RegisterSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email format").min(1, "Email is required"),
+    accountType: z.enum(["individual", "corporate"], {
+      required_error: "Account type is required",
+    }),
     password: z
       .string()
       .min(4, "Password must be at least 4 characters long")

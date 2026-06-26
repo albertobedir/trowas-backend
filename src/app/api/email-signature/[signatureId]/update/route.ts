@@ -73,6 +73,7 @@ export async function PATCH(
     signature.images.profilepic = formData.get("showProfilePic") === "true";
     signature.images.companylogo = formData.get("showCompanyLogo") === "true";
     signature.images.qrcode = formData.get("showQRCode") === "true";
+    signature.images.showBanner = formData.get("showBanner") === "true";
 
     const bannerFile = formData.get("bannerImage") as File | null;
     if (bannerFile && bannerFile.size > 0) {

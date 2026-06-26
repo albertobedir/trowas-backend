@@ -30,8 +30,14 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { SearchableDropdown, DropdownItem } from "@/components/ui/searchable-dropdown";
-import { SelectableDropdown, DropdownItem2 } from "@/components/ui/selectable-dropdown";
+import {
+  SearchableDropdown,
+  DropdownItem,
+} from "@/components/ui/searchable-dropdown";
+import {
+  SelectableDropdown,
+  DropdownItem2,
+} from "@/components/ui/selectable-dropdown";
 import {
   Popover,
   PopoverContent,
@@ -70,7 +76,7 @@ const SubteamDetailPage = () => {
   });
   const showNotification = (
     message: string,
-    type: "success" | "error" = "success"
+    type: "success" | "error" = "success",
   ) => {
     setNotification({
       visible: true,
@@ -97,7 +103,6 @@ const SubteamDetailPage = () => {
   const [isLoadingsub, setIsLoadingsub] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-
   // ALL state variables must be defined at the top level, before any conditional returns
   // State for restriction tab navigation
   const [restrictionTab, setRestrictionTab] = useState<
@@ -110,31 +115,31 @@ const SubteamDetailPage = () => {
       id: "1",
       name: "Marketing Team",
       description: "Handles all marketing campaigns and strategies",
-      avatar: "/uploads/marketing-avatar.jpg" // Add actual avatar URLs
+      avatar: "/uploads/marketing-avatar.jpg", // Add actual avatar URLs
     },
     {
       id: "2",
       name: "Development Team",
       description: "Responsible for software development and maintenance",
-      avatar: "/uploads/dev-avatar.jpg"
+      avatar: "/uploads/dev-avatar.jpg",
     },
     {
       id: "3",
       name: "Sales Team",
       description: "Manages client relationships and sales processes",
-      avatar: "/uploads/sales-avatar.jpg"
+      avatar: "/uploads/sales-avatar.jpg",
     },
     {
       id: "4",
       name: "Customer Support",
       description: "Provides assistance and support to customers",
-      avatar: "/uploads/support-avatar.jpg"
+      avatar: "/uploads/support-avatar.jpg",
     },
     {
       id: "5",
       name: "Design Team",
       description: "Creates visual designs and user experiences",
-      avatar: "/uploads/design-avatar.jpg"
+      avatar: "/uploads/design-avatar.jpg",
     },
   ]);
   useEffect(() => {
@@ -146,38 +151,39 @@ const SubteamDetailPage = () => {
       id: "template_1",
       name: "Modern Business Card",
       description: "Clean and professional design for business professionals",
-      avatar: "/public/theme1.png" // Template logo/preview
+      avatar: "/public/theme1.png", // Template logo/preview
     },
     {
       id: "template_2",
       name: "Creative Portfolio",
       description: "Vibrant design perfect for creative professionals",
-      avatar: "/public/templates_cover.png"
+      avatar: "/public/templates_cover.png",
     },
     {
       id: "template_3",
       name: "Corporate Executive",
       description: "Elegant layout for corporate executives and managers",
-      avatar: "/public/theme1.png"
+      avatar: "/public/theme1.png",
     },
     {
       id: "template_4",
       name: "Tech Startup",
       description: "Modern tech-focused design for startups and developers",
-      avatar: "/public/templates_cover.png"
+      avatar: "/public/templates_cover.png",
     },
     {
       id: "template_5",
       name: "Healthcare Professional",
-      description: "Trust-building design for healthcare and medical professionals",
-      avatar: "/public/theme1.png"
+      description:
+        "Trust-building design for healthcare and medical professionals",
+      avatar: "/public/theme1.png",
     },
     {
       id: "template_6",
       name: "Real Estate Agent",
       description: "Professional template for real estate professionals",
-      avatar: "/public/templates_cover.png"
-    }
+      avatar: "/public/templates_cover.png",
+    },
   ]);
   interface Template {
     _id: string;
@@ -189,13 +195,17 @@ const SubteamDetailPage = () => {
     const fetchtemplates = async () => {
       try {
         if (user?.team) {
-          const response = await Api.get(`templates/get-all?teamId=${user?.team}`);
-          const dropdownItems = response.data.templates.map((template: Template) => ({
-            id: template._id,
-            name: template.templateName,
-            description: template.bio || "No description provided", // fallback
-            avatar: template.coverPhoto || "/defaultcover.jpg"
-          }));
+          const response = await Api.get(
+            `templates/get-all?teamId=${user?.team}`,
+          );
+          const dropdownItems = response.data.templates.map(
+            (template: Template) => ({
+              id: template._id,
+              name: template.templateName,
+              description: template.bio || "No description provided", // fallback
+              avatar: template.coverPhoto || "/defaultcover.jpg",
+            }),
+          );
           setAvailableTemplates(dropdownItems);
         }
       } catch (error) {
@@ -215,25 +225,25 @@ const SubteamDetailPage = () => {
 
   // Handle template selection for Add Template functionality
   const handleTemplateSelect = async (selectedItems: string[]) => {
-  try {
-    await Api.patch(`/subteam/${subteamId}/assign/template`, {
-      templateIds: selectedItems
-    });
-    // Response geldikten sonra sayfayı yenile
-    window.location.reload();
-  } catch (error) {
-    console.error('Template assign error:', error);
-    // Hata varsa dilersen kullanıcıya bildirim gösterebilirsin
-  }
-};
+    try {
+      await Api.patch(`/subteam/${subteamId}/assign/template`, {
+        templateIds: selectedItems,
+      });
+      // Response geldikten sonra sayfayı yenile
+      window.location.reload();
+    } catch (error) {
+      console.error("Template assign error:", error);
+      // Hata varsa dilersen kullanıcıya bildirim gösterebilirsin
+    }
+  };
 
   // Handle CSV file upload
   const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
+    if (file && file.type === "text/csv") {
       setCsvFile(file);
     } else {
-      showNotification('Please select a valid CSV file', 'error');
+      showNotification("Please select a valid CSV file", "error");
     }
   };
 
@@ -255,43 +265,47 @@ const SubteamDetailPage = () => {
     const files = e.dataTransfer.files;
     const file = files[0];
 
-    if (file && file.type === 'text/csv') {
+    if (file && file.type === "text/csv") {
       setCsvFile(file);
     } else {
-      showNotification('Please select a valid CSV file', 'error');
+      showNotification("Please select a valid CSV file", "error");
     }
   };
 
   // Handle CSV upload submission
   const handleCsvUpload = async () => {
     if (!csvFile) {
-      showNotification('Please select a CSV file first', 'error');
+      showNotification("Please select a CSV file first", "error");
       return;
     }
 
     try {
       // Create FormData to send the file
       const formData = new FormData();
-      formData.append('csvFile', csvFile);
+      formData.append("csvFile", csvFile);
 
       // Replace this with your actual API endpoint for CSV upload
-      const response = await Api.post(`/subteam/${subteamId}/members/upload-csv`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const response = await Api.post(
+        `/subteam/${subteamId}/members/upload-csv`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
 
-      showNotification('Members uploaded successfully!', 'success');
+      showNotification("Members uploaded successfully!", "success");
       setIsCsvDialogOpen(false);
       setCsvFile(null);
 
       // Refresh the members list
       fetchMembers();
     } catch (error: any) {
-      console.error('Error uploading CSV:', error);
+      console.error("Error uploading CSV:", error);
       showNotification(
-        error?.response?.data?.message || 'Failed to upload CSV file',
-        'error'
+        error?.response?.data?.message || "Failed to upload CSV file",
+        "error",
       );
     }
   };
@@ -336,7 +350,6 @@ const SubteamDetailPage = () => {
   const [coverImage, setCoverImage] = useState<string | null>(null);
   // Form state with default values that will be updated when data loads
 
-
   // Update teamLogo when subteamData is loaded
   useEffect(() => {
     const fetchSubteamData = async () => {
@@ -348,7 +361,7 @@ const SubteamDetailPage = () => {
         setPermissionsres(BigInt(response.data.subTeam.permissions));
       } catch (err: any) {
         setError(
-          err?.response?.data?.message || "Failed to fetch subteam data"
+          err?.response?.data?.message || "Failed to fetch subteam data",
         );
         console.error("Error fetching subteam data:", err);
       } finally {
@@ -367,7 +380,7 @@ const SubteamDetailPage = () => {
 
   const togglePermission = (perm: bigint) => {
     setPermissionsres((prev) =>
-      (prev & perm) !== 0n ? prev & ~perm : prev | perm
+      (prev & perm) !== 0n ? prev & ~perm : prev | perm,
     );
   };
 
@@ -383,7 +396,7 @@ const SubteamDetailPage = () => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       console.log("API response:", response.data);
       showNotification("Subteam permissions updated successfully", "success");
@@ -410,7 +423,7 @@ const SubteamDetailPage = () => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       console.log("API response:", response.data);
       showNotification("Subteam updated successfully", "success");
@@ -445,14 +458,16 @@ const SubteamDetailPage = () => {
     // Determine who is part of the subteam by comparing IDs
     const teamMembersList = members.filter(
       (member) =>
-        member && member._id && subteamData.subTeam.members.includes(member._id)
+        member &&
+        member._id &&
+        subteamData.subTeam.members.includes(member._id),
     );
 
     const nonTeamMembersList = members.filter(
       (member) =>
         member &&
         member._id &&
-        !subteamData.subTeam.members.includes(member._id)
+        !subteamData.subTeam.members.includes(member._id),
     );
 
     return { teamMembersList, nonTeamMembersList };
@@ -474,13 +489,13 @@ const SubteamDetailPage = () => {
       setSelectedMembers((prev) =>
         prev.includes(id)
           ? prev.filter((memberId) => memberId !== id)
-          : [...prev, id]
+          : [...prev, id],
       );
     } else {
       setSelectedNonMembers((prev) =>
         prev.includes(id)
           ? prev.filter((memberId) => memberId !== id)
-          : [...prev, id]
+          : [...prev, id],
       );
     }
   };
@@ -520,7 +535,7 @@ const SubteamDetailPage = () => {
     } catch (err: any) {
       // Handle errors
       setError(
-        err?.response?.data?.message || "Failed to update subteam members"
+        err?.response?.data?.message || "Failed to update subteam members",
       );
       console.error("Error updating subteam members:", err);
     } finally {
@@ -531,25 +546,25 @@ const SubteamDetailPage = () => {
   useEffect(() => {
     if (restrictionTab === "about") {
       const allChecked = getPermissionsByGroup("about").every(
-        (bit) => (permissionsres & bit) !== 0n
+        (bit) => (permissionsres & bit) !== 0n,
       );
       setSelectAllresChecked(allChecked);
     }
     if (restrictionTab === "content") {
       const allChecked = getPermissionsByGroup("content").every(
-        (bit) => (permissionsres & bit) !== 0n
+        (bit) => (permissionsres & bit) !== 0n,
       );
       setSelectAllresChecked(allChecked);
     }
     if (restrictionTab === "qrcode") {
       const allChecked = getPermissionsByGroup("qrcode").every(
-        (bit) => (permissionsres & bit) !== 0n
+        (bit) => (permissionsres & bit) !== 0n,
       );
       setSelectAllresChecked(allChecked);
     }
     if (restrictionTab === "settings") {
       const allChecked = getPermissionsByGroup("settings").every(
-        (bit) => (permissionsres & bit) !== 0n
+        (bit) => (permissionsres & bit) !== 0n,
       );
       setSelectAllresChecked(allChecked);
     }
@@ -623,15 +638,8 @@ const SubteamDetailPage = () => {
     return (
       <div className="w-full h-screen flex flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 flex items-center justify-center bg-yellow-100 rounded-full">
-            <X className="h-6 w-6 text-yellow-600" />
-          </div>
-          <p className="text-lg text-gray-600">
-            No data available for this subteam
-          </p>
-          <Button onClick={() => window.location.reload()} className="mt-2">
-            Retry
-          </Button>
+          <div className="animate-spin h-8 w-8 border-4 border-gray-300 rounded-full border-t-black"></div>
+          <p className="text-lg text-gray-600">Loading subteam data...</p>
         </div>
       </div>
     );
@@ -666,7 +674,7 @@ const SubteamDetailPage = () => {
   // Event handlers for checkboxes
 
   const handleSelectAllNonMembers = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (e.target.checked) {
       setSelectedNonMembers(filteredNonTeamMembers.map((member) => member._id));
@@ -690,9 +698,9 @@ const SubteamDetailPage = () => {
       : 0,
     createdAt: subteamData.subTeam.createdAt
       ? new Date(subteamData.subTeam.createdAt).toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
+          month: "long",
+          year: "numeric",
+        })
       : "Unknown",
     status: subteamData.subTeam.active ? "Active" : "Inactive",
   };
@@ -723,12 +731,12 @@ const SubteamDetailPage = () => {
       icon: FileText,
       description: "Configure automatic template assignments",
     },
-    {
-      name: "Integrations",
-      value: "integrations",
-      icon: Settings,
-      description: "Configure team integrations",
-    },
+    // {
+    //   name: "Integrations",
+    //   value: "integrations",
+    //   icon: Settings,
+    //   description: "Configure team integrations",
+    // },
     {
       name: "View Members",
       value: "view-members",
@@ -931,7 +939,7 @@ const SubteamDetailPage = () => {
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                       checked={
                         selectedNonMembers.length ===
-                        filteredNonTeamMembers.length &&
+                          filteredNonTeamMembers.length &&
                         filteredNonTeamMembers.length > 0
                       }
                       onChange={handleSelectAllNonMembers}
@@ -1003,13 +1011,6 @@ const SubteamDetailPage = () => {
             {/* Bottom Help Section */}
 
             <div className="flex justify-between items-center mt-8 pt-4 border-t border-gray-200">
-              <div className="flex items-center text-sm text-gray-500">
-              <span>{"Don't see a member in the list?"}</span>
-                <button className="text-blue-500 ml-2 text-sm hover:underline">
-                  Add them here
-                </button>
-              </div>
-
               <Button
                 className="rounded-full px-6"
                 onClick={handleUpdateMembers}
@@ -1044,7 +1045,6 @@ const SubteamDetailPage = () => {
                         </div>
                       )}
                     </div>
-
                   </div>
 
                   <div className="flex flex-col">
@@ -1061,7 +1061,7 @@ const SubteamDetailPage = () => {
                             const file = e.target.files[0];
                             const fileUrl = URL.createObjectURL(file);
                             handleInputChange("logo", fileUrl);
-                            setLogoFile(file);    // gerçek dosya
+                            setLogoFile(file); // gerçek dosya
                           }
                         }}
                       />
@@ -1086,7 +1086,6 @@ const SubteamDetailPage = () => {
                 />
               </div>
 
-
               {/* Description */}
               <div>
                 <label className="text-sm font-medium block mb-2">
@@ -1110,7 +1109,9 @@ const SubteamDetailPage = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} className="px-6 rounded-md">Update</Button>
+              <Button onClick={handleSubmit} className="px-6 rounded-md">
+                Update
+              </Button>
             </div>
           </div>
         );
@@ -1241,7 +1242,7 @@ const SubteamDetailPage = () => {
                               strokeWidth={2}
                               d={
                                 (permissionsres & BitPerms.profilePicture) !==
-                                  0n
+                                0n
                                   ? "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                                   : "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                               }
@@ -3517,7 +3518,7 @@ const SubteamDetailPage = () => {
                             d={
                               (permissionsres &
                                 BitPerms.downloadleadascontact) !==
-                                0n
+                              0n
                                 ? "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                                 : "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                             }
@@ -3624,7 +3625,7 @@ const SubteamDetailPage = () => {
                             strokeWidth={2}
                             d={
                               (permissionsres & BitPerms.virtualbackground) !==
-                                0n
+                              0n
                                 ? "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                                 : "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                             }
@@ -3798,29 +3799,31 @@ const SubteamDetailPage = () => {
             <div className="space-y-4">
               {/* BABEL Template */}
 
-              {availableTemplates.filter(template =>
-                subteamData?.subTeam?.templates?.includes(template.id)
-              ).map((template, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-100 rounded-lg overflow-hidden"
-                >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-white border border-gray-200 overflow-hidden">
-                        <Image
-                          src={template.avatar!}
-                          alt={`${template.name} Template`}
-                          width={48}
-                          height={48}
-                          className="h-full w-full object-cover"
-                        />
+              {availableTemplates
+                .filter((template) =>
+                  subteamData?.subTeam?.templates?.includes(template.id),
+                )
+                .map((template, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-100 rounded-lg overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-white border border-gray-200 overflow-hidden">
+                          <Image
+                            src={template.avatar!}
+                            alt={`${template.name} Template`}
+                            width={48}
+                            height={48}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <span className="font-medium">{template.name}</span>
                       </div>
-                      <span className="font-medium">{template.name}</span>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             {/* Add Template Button */}
@@ -3836,59 +3839,57 @@ const SubteamDetailPage = () => {
                 maxHeight="400px"
                 width="400px"
               />
-
-           
             </div>
 
             {/* Action Buttons */}
           </div>
         );
 
-      case "integrations":
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Team Integrations</h2>
-            <p className="text-muted-foreground">
-              Connect your team with external services and tools.
-            </p>
-
-            {/* Available Integrations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {/* Integration Cards */}
-              {[
-                { name: "Slack", icon: "🔄", connected: true },
-                { name: "Google Workspace", icon: "📁", connected: false },
-                { name: "Microsoft Teams", icon: "👥", connected: false },
-                { name: "Zoom", icon: "📹", connected: true },
-                { name: "Trello", icon: "📋", connected: false },
-                { name: "GitHub", icon: "💻", connected: false },
-              ].map((integration, index) => (
-                <div
-                  key={index}
-                  className="bg-[#F7F7F7] p-4 rounded-lg flex justify-between items-center"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-slate-200 flex items-center justify-center">
-                      <span className="text-xl">{integration.icon}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{integration.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {integration.connected ? "Connected" : "Not connected"}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant={integration.connected ? "outline" : "default"}
-                    size="sm"
-                  >
-                    {integration.connected ? "Configure" : "Connect"}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+      // case "integrations":
+      //   return (
+      //     <div className="space-y-4">
+      //       <h2 className="text-xl font-semibold">Team Integrations</h2>
+      //       <p className="text-muted-foreground">
+      //         Connect your team with external services and tools.
+      //       </p>
+      //
+      //       {/* Available Integrations */}
+      //       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      //         {/* Integration Cards */}
+      //         {[
+      //           { name: "Slack", icon: "🔄", connected: true },
+      //           { name: "Google Workspace", icon: "📁", connected: false },
+      //           { name: "Microsoft Teams", icon: "👥", connected: false },
+      //           { name: "Zoom", icon: "📹", connected: true },
+      //           { name: "Trello", icon: "📋", connected: false },
+      //           { name: "GitHub", icon: "💻", connected: false },
+      //         ].map((integration, index) => (
+      //           <div
+      //             key={index}
+      //             className="bg-[#F7F7F7] p-4 rounded-lg flex justify-between items-center"
+      //           >
+      //             <div className="flex items-center gap-3">
+      //               <div className="w-10 h-10 rounded-md bg-slate-200 flex items-center justify-center">
+      //                 <span className="text-xl">{integration.icon}</span>
+      //               </div>
+      //               <div>
+      //                 <p className="text-sm font-medium">{integration.name}</p>
+      //                 <p className="text-xs text-muted-foreground">
+      //                   {integration.connected ? "Connected" : "Not connected"}
+      //                 </p>
+      //               </div>
+      //             </div>
+      //             <Button
+      //               variant={integration.connected ? "outline" : "default"}
+      //               size="sm"
+      //             >
+      //               {integration.connected ? "Configure" : "Connect"}
+      //             </Button>
+      //           </div>
+      //         ))}
+      //       </div>
+      //     </div>
+      //   );
 
       case "view-members":
         return (
@@ -4044,7 +4045,7 @@ const SubteamDetailPage = () => {
               </div>
             </div>
 
-            <Popover>
+            {/* <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -4083,7 +4084,7 @@ const SubteamDetailPage = () => {
                   </Button>
                 </div>
               </PopoverContent>
-            </Popover>
+            </Popover> */}
           </div>
 
           {/* Card that fills the remaining space */}
@@ -4109,7 +4110,7 @@ const SubteamDetailPage = () => {
                             "flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
                             isActive
                               ? "bg-black text-white"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                           )}
                         >
                           <item.icon className="h-3.5 w-3.5" />
@@ -4138,10 +4139,11 @@ const SubteamDetailPage = () => {
               <div className="w-full md:w-5/6 p-6 h-full overflow-y-auto">
                 {notification.visible && (
                   <div
-                    className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg ${notification.type === "success"
-                      ? "bg-green-600"
-                      : "bg-red-600"
-                      } text-white font-medium transition-all duration-500 transform translate-y-0 opacity-100`}
+                    className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg ${
+                      notification.type === "success"
+                        ? "bg-green-600"
+                        : "bg-red-600"
+                    } text-white font-medium transition-all duration-500 transform translate-y-0 opacity-100`}
                   >
                     {notification.type === "success" ? (
                       <div className="flex items-center gap-2">
@@ -4169,27 +4171,27 @@ const SubteamDetailPage = () => {
           <DialogHeader>
             <DialogTitle>Upload Members via CSV</DialogTitle>
             <DialogDescription>
-              Upload a CSV file to add multiple members to the subteam. The CSV should contain columns for email, name, and role.
+              Upload a CSV file to add multiple members to the subteam. The CSV
+              should contain columns for email, name, and role.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             {/* Drag and Drop CSV Upload Area */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Select CSV File
-              </label>
+              <label className="text-sm font-medium">Select CSV File</label>
               <div
-                className={`relative border-2 flex items-center justify-center border-dashed rounded-lg p-8 h-80 text-center transition-colors cursor-pointer ${isDragOver
-                  ? 'border-primary bg-primary/5'
-                  : csvFile
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                  }`}
+                className={`relative border-2 flex items-center justify-center border-dashed rounded-lg p-8 h-80 text-center transition-colors cursor-pointer ${
+                  isDragOver
+                    ? "border-primary bg-primary/5"
+                    : csvFile
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-300 hover:border-gray-400"
+                }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={() => document.getElementById('csv-upload')?.click()}
+                onClick={() => document.getElementById("csv-upload")?.click()}
               >
                 <input
                   id="csv-upload"
@@ -4203,8 +4205,18 @@ const SubteamDetailPage = () => {
                   {csvFile ? (
                     <>
                       <div className="p-3 bg-green-100 rounded-full">
-                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-8 h-8 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                       <div>
@@ -4219,13 +4231,25 @@ const SubteamDetailPage = () => {
                   ) : (
                     <>
                       <div className="p-3  bg-gray-100 rounded-full">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        <svg
+                          className="w-8 h-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
                         </svg>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">
-                          {isDragOver ? 'Drop your CSV file here' : 'Drag & drop your CSV file here'}
+                          {isDragOver
+                            ? "Drop your CSV file here"
+                            : "Drag & drop your CSV file here"}
                         </p>
                         <p className="text-xs text-gray-500">
                           or click to browse files
@@ -4251,7 +4275,9 @@ const SubteamDetailPage = () => {
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>CSV Format Requirements:</strong></p>
+              <p>
+                <strong>CSV Format Requirements:</strong>
+              </p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>First row should contain column headers</li>
                 <li>Required columns: email, name</li>

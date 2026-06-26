@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Api } from '@/lib/api';
+import { useUserStore } from '@/store/user-store';
+import { isIndividualAccount } from '@/lib/account-type';
 
 interface TeamMember {
   _id: string;
@@ -8,6 +10,7 @@ interface TeamMember {
   email: string;
   username: string;
   profileImage: string;
+  coverPhoto?: string;
   team: string;
   subTeam: string | null;
   template: string;
@@ -39,6 +42,12 @@ export const useTeamMembersStore = create<TeamMembersState>()(
       isLoading: false,
       error: null,
       fetchMembers: async () => {
+        const user = useUserStore.getState().user;
+        if (isIndividualAccount(user)) {
+          set({ members: [], isLoading: false, error: null });
+          return;
+        }
+
         set({ isLoading: true, error: null });
         try {
           const response = await Api.get('teams/members');

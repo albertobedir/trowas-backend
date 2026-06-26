@@ -22,7 +22,6 @@ import {
   Plus,
   LayoutDashboard as WidgetIcon,
   Bell,
-  GitMerge,
   HelpCircle,
   FileText,
   MessageSquare,
@@ -54,6 +53,7 @@ import {
 } from "./ui/sidebar";
 import { Button } from "./ui/button";
 import { WhatsNewDialog, useUpdateStore } from "./whats-new-dialog";
+import { isIndividualAccount } from "@/lib/account-type";
 
 export function SidebarNav() {
   const router = useRouter();
@@ -63,14 +63,20 @@ export function SidebarNav() {
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const { user, fetchUser, isLoading: isUserLoading } = useUserStore();
-  const { teams, fetchTeam, setTeam, isLoading: isTeamLoading } = useTeamStore();
+  const {
+    teams,
+    fetchTeam,
+    setTeam,
+    isLoading: isTeamLoading,
+  } = useTeamStore();
   const team = user?.team ? teams[user.team] : null;
+  const isIndividual = isIndividualAccount(user);
 
   useEffect(() => {
     // Fetch user data from the global store if not already loaded
     fetchUser();
   }, [fetchUser]);
-  
+
   useEffect(() => {
     // Get the teamId from the user object and fetch team data when user is loaded
     if (user?.team) {
@@ -93,10 +99,17 @@ export function SidebarNav() {
   // Check if the current path is within a specific section
   const isInSection = (section: string) => pathname.startsWith(`/${section}`);
 
+  const isMyCardsActive =
+    isIndividual &&
+    (pathname === "/user/cards" ||
+      (pathname.startsWith("/team/members/") &&
+        pathname !== "/team/members" &&
+        pathname !== "/team/add-members"));
+
   // Effect to handle menu state based on pathname
   useEffect(() => {
-    const section = ["team", "toolkit", "support", "settings"].find((s) =>
-      isInSection(s)
+    const section = ["team", "user", "toolkit", "support", "settings"].find(
+      (s) => isInSection(s),
     );
     if (section) {
       setOpenMenus((prev) => ({ ...prev, [section]: true }));
@@ -111,7 +124,21 @@ export function SidebarNav() {
       <Sidebar className="border-r border-sidebar-border/50 flex flex-col bg-sidebar shadow-[var(--sidebar-shadow)]">
         <SidebarHeader className="border-b border-sidebar-border/50">
           <div className="flex justify-center items-center gap-2 px-3 h-[105px]">
-          {team?.teamSettings?.logo ? (
+            {isIndividual ? (
+              user?.profileImage ? (
+                <Image
+                  src={user.profileImage}
+                  alt={user.name || "Profile"}
+                  width={72}
+                  height={72}
+                  className="rounded-full object-cover h-[72px] w-[72px]"
+                />
+              ) : (
+                <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-sidebar-accent">
+                  <UserCircle className="h-10 w-10 text-muted-foreground" />
+                </div>
+              )
+            ) : team?.teamSettings?.logo ? (
               <Image
                 src={team.teamSettings.logo}
                 alt="Logo"
@@ -150,84 +177,110 @@ export function SidebarNav() {
               </Link>
             </SidebarMenuItem>
 
-            {/* Team */}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={(e) => {
-                  toggleMenu("team");
-                  if (!openMenus["team"]) {
-                    router.push("/team/members");
-                  }
-                }}
-                className={`transition-all duration-200 ease-in-out rounded-md py-1.5 text-[11.5px] font-medium
+            {/* Team / My Cards */}
+            {!isUserLoading && isIndividual ? (
+              <SidebarMenuItem>
+                <Link
+                  href="/user/cards"
+                  onClick={() => isMobile && setOpenMobile(false)}
+                  className="block"
+                >
+                  <SidebarMenuButton
+                    className={`transition-all duration-200 ease-in-out rounded-md py-1.5 text-[11.5px] font-medium
+                      ${
+                        isMyCardsActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold hover:bg-sidebar-accent"
+                          : "hover:bg-sidebar-accent/50"
+                      }`}
+                  >
+                    <CreditCard
+                      className={`h-4 w-4 transition-colors ${
+                        isMyCardsActive ? "text-black" : ""
+                      }`}
+                    />
+                    <span>My Cards</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ) : !isUserLoading ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={(e) => {
+                    toggleMenu("team");
+                    if (!openMenus["team"]) {
+                      router.push("/team/members");
+                    }
+                  }}
+                  className={`transition-all duration-200 ease-in-out rounded-md py-1.5 text-[11.5px] font-medium
                   ${isInSection("team") ? "text-black font-semibold" : ""}`}
-              >
-                <RiTeamLine
-                  className={`h-4 w-4 transition-colors ${
-                    isInSection("team") ? "text-black" : ""
+                >
+                  <RiTeamLine
+                    className={`h-4 w-4 transition-colors ${
+                      isInSection("team") ? "text-black" : ""
+                    }`}
+                  />
+                  <span>Team</span>
+                  <ChevronDown
+                    className={`ml-auto h-4 w-4 shrink-0 transition-transform duration-300 ease-in-out ${
+                      openMenus["team"] ? "rotate-180" : ""
+                    }`}
+                  />
+                </SidebarMenuButton>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    openMenus["team"] ? "max-h-96" : "max-h-0"
                   }`}
-                />
-                <span>Team</span>
-                <ChevronDown
-                  className={`ml-auto h-4 w-4 shrink-0 transition-transform duration-300 ease-in-out ${
-                    openMenus["team"] ? "rotate-180" : ""
-                  }`}
-                />
-              </SidebarMenuButton>
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  openMenus["team"] ? "max-h-96" : "max-h-0"
-                }`}
-              >
-                <SidebarMenuSub className="animate-in slide-in-from-left-2 duration-300 space-y-1">
-                  <SidebarMenuSubItem>
-                    <div onClick={() => router.push("/team/members")}>
-                      <SidebarMenuSubButton
-                        className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
+                >
+                  <SidebarMenuSub className="animate-in slide-in-from-left-2 duration-300 space-y-1">
+                    <SidebarMenuSubItem>
+                      <div onClick={() => router.push("/team/members")}>
+                        <SidebarMenuSubButton
+                          className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
                           ${
                             pathname === "/team/members"
                               ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                               : ""
                           }`}
-                      >
-                        Members
-                      </SidebarMenuSubButton>
-                    </div>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <div onClick={() => router.push("/team/subteams")}>
-                      <SidebarMenuSubButton
-                        className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
+                        >
+                          Members
+                        </SidebarMenuSubButton>
+                      </div>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <div onClick={() => router.push("/team/subteams")}>
+                        <SidebarMenuSubButton
+                          className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
                           ${
                             pathname === "/team/subteams"
                               ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                               : ""
                           }`}
-                      >
-                        Subteams
-                      </SidebarMenuSubButton>
-                    </div>
-                  </SidebarMenuSubItem>
-                  
-                  {user?.roles?.teamRole !== "member" && (
-                    <SidebarMenuSubItem>
-                      <div onClick={() => router.push("/team/add-members")}>
-                        <SidebarMenuSubButton
-                          className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
+                        >
+                          Subteams
+                        </SidebarMenuSubButton>
+                      </div>
+                    </SidebarMenuSubItem>
+
+                    {user?.roles?.teamRole !== "member" && (
+                      <SidebarMenuSubItem>
+                        <div onClick={() => router.push("/team/add-members")}>
+                          <SidebarMenuSubButton
+                            className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
                             ${
                               pathname === "/team/add-members"
                                 ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                                 : ""
                             }`}
-                        >
-                          Add Members
-                        </SidebarMenuSubButton>
-                      </div>
-                    </SidebarMenuSubItem>
-                  )}
-                </SidebarMenuSub>
-              </div>
-            </SidebarMenuItem>
+                          >
+                            Add Members
+                          </SidebarMenuSubButton>
+                        </div>
+                      </SidebarMenuSubItem>
+                    )}
+                  </SidebarMenuSub>
+                </div>
+              </SidebarMenuItem>
+            ) : null}
 
             {/* Themes */}
             <SidebarMenuItem>
@@ -277,7 +330,7 @@ export function SidebarNav() {
               </Link>
             </SidebarMenuItem>
 
-            {/* Analytics */}
+            {/* Analytics
             <SidebarMenuItem>
               <Link
                 href="/analytics"
@@ -299,7 +352,7 @@ export function SidebarNav() {
                   <span>Analytics</span>
                 </SidebarMenuButton>
               </Link>
-            </SidebarMenuItem>
+            </SidebarMenuItem> */}
 
             {/* Toolkit */}
             {user?.roles?.teamRole !== "member" && (
@@ -333,7 +386,9 @@ export function SidebarNav() {
                 >
                   <SidebarMenuSub className="animate-in slide-in-from-left-2 duration-300 space-y-1">
                     <SidebarMenuSubItem>
-                      <div onClick={() => router.push("/toolkit/mail-signature")}>
+                      <div
+                        onClick={() => router.push("/toolkit/mail-signature")}
+                      >
                         <SidebarMenuSubButton
                           className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
                             ${
@@ -348,7 +403,9 @@ export function SidebarNav() {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <div
-                        onClick={() => router.push("/toolkit/virtual-background")}
+                        onClick={() =>
+                          router.push("/toolkit/virtual-background")
+                        }
                       >
                         <SidebarMenuSubButton
                           className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
@@ -381,7 +438,7 @@ export function SidebarNav() {
               </SidebarMenuItem>
             )}
 
-            {/* Integrations */}
+            {/* Integrations - hidden for now
             <SidebarMenuItem>
               <Link
                 href="/integrations"
@@ -404,6 +461,7 @@ export function SidebarNav() {
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
+            */}
 
             {/* Support */}
             <SidebarMenuItem>
@@ -450,11 +508,11 @@ export function SidebarNav() {
                     </div>
                   </SidebarMenuSubItem>
                   <SidebarMenuSubItem>
-                    <div onClick={() => router.push("/support/contact")}>
+                    <div onClick={() => router.push("/contact")}>
                       <SidebarMenuSubButton
                         className={`transition-all duration-200 rounded-md hover:bg-sidebar-accent/30 hover:translate-x-0.5 text-[11.5px] font-medium cursor-pointer
                           ${
-                            pathname === "/support/contact"
+                            pathname === "/contact"
                               ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                               : ""
                           }`}
@@ -539,7 +597,6 @@ export function SidebarNav() {
                       </SidebarMenuSubButton>
                     </div>
                   </SidebarMenuSubItem>
-                  
                 </SidebarMenuSub>
               </div>
             </SidebarMenuItem>
@@ -567,7 +624,6 @@ export function SidebarNav() {
           </Button>
 
           {/* Refer Team Button */}
-          
 
           {/* User Panel */}
           <div className="px-3 py-2 transition-all duration-200 hover:bg-sidebar-accent/20 cursor-pointer group">
@@ -594,7 +650,6 @@ export function SidebarNav() {
                   Manage Account
                 </Link>
               </div>
-              
             </div>
           </div>
         </div>

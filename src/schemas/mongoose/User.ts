@@ -37,6 +37,11 @@ const userSchema = new Schema({
   },
   isVipMember: { type: Boolean, default: false },
   isChangePass: { type: Boolean, default: false },
+  accountType: {
+    type: String,
+    enum: ["individual", "corporate"],
+    default: "corporate",
+  },
   uniqueUrlName: {
     type: String,
     unique: true,

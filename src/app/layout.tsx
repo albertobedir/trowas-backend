@@ -9,6 +9,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Toaster } from "sonner";
 import "sonner/dist/styles.css";
+import { isMarketingRoute } from "@/lib/webflow/marketing-routes";
+import { NavigationProgress } from "@/components/navigation-progress";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,14 +22,21 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const isAuthRoute = pathname?.includes("/auth/");
+  const isAdminRoute = pathname?.startsWith("/admin");
+  const isMarketing = isMarketingRoute(pathname);
   const [client] = useState<QueryClient>(() => new QueryClient());
 
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased bg-[rgba(0,0,0,0.03)]`}>
         <QueryClientProvider client={client}>
-          {isAuthRoute || pathname.includes("/connect/") ? (
-            // Auth routes - no sidebar
+          <TooltipProvider delayDuration={200}>
+          <NavigationProgress />
+          {isAuthRoute ||
+          isAdminRoute ||
+          pathname.includes("/connect/") ||
+          isMarketing ? (
+            // Auth, connect, and marketing routes - no sidebar
             <main className="w-full h-full">{children}</main>
           ) : (
             // Protected routes - with sidebar
@@ -40,6 +50,7 @@ export default function RootLayout({
             </SidebarProvider>
           )}
           <Toaster position="top-right" expand={true} richColors />
+          </TooltipProvider>
         </QueryClientProvider>
       </body>
     </html>

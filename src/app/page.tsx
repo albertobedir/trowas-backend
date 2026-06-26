@@ -14,6 +14,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Api } from "@/lib/api";
 import { useUserStore } from "@/store/user-store";
 import { useTeamStore } from "@/store/team-store";
+import { isIndividualAccount } from "@/lib/account-type";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Link from "next/link";
 import { PasswordResetDialog } from "@/components/ui/password-reset-dialog";
@@ -151,7 +152,7 @@ export default function Home() {
 
   useEffect(() => {
     // Get the teamId from the user object and fetch team data when user is loaded
-    if (user?.team) {
+    if (user?.team && !isIndividualAccount(user)) {
       fetchTeam(user.team);
     }
   }, [fetchTeam, user]);
@@ -218,16 +219,22 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      if (!isUserLoading && user) {
-        const leaddatares = await Api.get(`/leads/all?teamId=${user?.team}&page=1&size=100`);
-        setdataleads(leaddatares?.data?.leads);
-        const performansds = await Api.get(`/teams/${user?.team}/get-performance`);
-        setApiResponse(performansds?.data.data);
-
+      if (!isUserLoading && user && !isIndividualAccount(user) && user.team) {
+        try {
+          const leaddatares = await Api.get(
+            `/leads/all?teamId=${user.team}&page=1&size=100`,
+          );
+          setdataleads(leaddatares?.data?.leads ?? []);
+          const performansds = await Api.get(
+            `/teams/${user.team}/get-performance`,
+          );
+          setApiResponse(performansds?.data.data);
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+        }
       }
-
-    })()
-  }, [user,isUserLoading]);
+    })();
+  }, [user, isUserLoading]);
   console.log(dataleads);
   const recentLeads = [
     { id: '123312312', connectedWith: 'Copy of ...', date: 'May 09, 2025', initial: '1' },
@@ -488,6 +495,7 @@ export default function Home() {
         {/* Right Section */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Add Members Card */}
+          {!isIndividualAccount(user) && (
           <Card className="shadow-sm border-0 ring-1 ring-black/5">
             <CardContent className="p-6 flex flex-col items-center justify-center py-7">
               <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
@@ -502,8 +510,27 @@ export default function Home() {
               </Button>
             </CardContent>
           </Card>
+          )}
 
-          {/* Top Performers Card */}
+          {isIndividualAccount(user) && (
+          <Card className="shadow-sm border-0 ring-1 ring-black/5">
+            <CardContent className="p-6 flex flex-col items-center justify-center py-7">
+              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+                <CreditCard className="w-8 h-8 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-medium text-center mb-2">My Cards</h3>
+              <p className="text-sm text-gray-500 text-center mb-4">
+                Dijital kartvizitlerinizi görüntüleyin ve düzenleyin
+              </p>
+              <Button onClick={() => window.location.href = '/user/cards'} className="p-4 rounded-full" size="sm">
+                <Plus className="w-4 h-4 mr-2" /> Kartlarıma Git
+              </Button>
+            </CardContent>
+          </Card>
+          )}
+
+          {/* Top Performers Card - placeholder to keep structure */}
+          {!isIndividualAccount(user) && (
           <Card className="shadow-sm border-0 ring-1 ring-black/5">
             <CardContent className="p-6">
               <h3 className="text-lg font-medium mb-4">Top performers</h3>
@@ -614,6 +641,7 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Expert Card */}
           <Card className="shadow-sm overflow-hidden border-0 ring-1 ring-black/5">

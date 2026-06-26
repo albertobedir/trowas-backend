@@ -7,6 +7,7 @@ import User from "@/schemas/mongoose/User";
 import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 import { isValidObjectId } from "mongoose";
 import SubTeam from "@/schemas/mongoose/SubTeam";
+import UserCard from "@/schemas/mongoose/UserCard";
 
 export async function GET(req: Request) {
   try {
@@ -47,7 +48,23 @@ export async function GET(req: Request) {
       .select("-password")
       .lean();
 
+    const cardIds = memberDetails
+      .map((member) => member.userCard?.[0]?.cardId)
+      .filter((cardId) => cardId && isValidObjectId(cardId));
+
+    const userCards = await UserCard.find({ _id: { $in: cardIds } })
+      .select("coverPhoto")
+      .lean();
+
+    const coverPhotoByCardId = new Map(
+      userCards.map((card) => [card._id.toString(), card.coverPhoto]),
+    );
+
     for (const member of memberDetails) {
+      const cardId = member.userCard?.[0]?.cardId?.toString();
+      member.coverPhoto =
+        (cardId && coverPhotoByCardId.get(cardId)) || "/defaultcover.jpg";
+
       if (member.subTeam && isValidObjectId(member.subTeam)) {
         const subTeam = await SubTeam.findById(member.subTeam).select("name");
         member.subTeam = subTeam

@@ -16,53 +16,54 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  EyeIcon, 
-  EyeOffIcon, 
-  UserPlus, 
-  Mail, 
-  Lock, 
+import {
+  EyeIcon,
+  EyeOffIcon,
+  UserPlus,
+  Mail,
+  Lock,
   User,
   Sparkles,
   Shield,
   CheckCircle,
   ArrowRight,
-  Star
+  Star,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
+import { useUserStore } from "@/store/user-store";
 
 // Enhanced floating particles component
 const FloatingParticles = () => {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const particles = Array.from({ length: 35 }, (_, i) => i);
-  
+
   useEffect(() => {
     const updateDimensions = () => {
       setDimensions({
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       });
     };
 
     updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
-  
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {particles.map((particle) => {
         const size = Math.random() * 4 + 1;
         const colors = [
           "from-green-400 to-blue-400",
-          "from-blue-400 to-purple-400", 
+          "from-blue-400 to-purple-400",
           "from-purple-400 to-pink-400",
           "from-pink-400 to-red-400",
-          "from-yellow-400 to-orange-400"
+          "from-yellow-400 to-orange-400",
         ];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        
+
         return (
           <motion.div
             key={particle}
@@ -104,13 +105,13 @@ const FloatingParticles = () => {
 // Animated geometric shapes
 const GeometricShapes = () => {
   const shapes = Array.from({ length: 8 }, (_, i) => i);
-  
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {shapes.map((shape) => {
         const shapeType = shape % 3;
         const baseDelay = shape * 0.5;
-        
+
         return (
           <motion.div
             key={shape}
@@ -190,7 +191,7 @@ const AnimatedBackground = () => (
         ease: "easeInOut",
       }}
     />
-    
+
     {/* Secondary gradient orbs */}
     <motion.div
       className="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-yellow-300/20 to-orange-400/20 rounded-full blur-2xl"
@@ -222,7 +223,7 @@ const AnimatedBackground = () => (
         ease: "easeInOut",
       }}
     />
-    
+
     {/* Pulsing background overlay */}
     <motion.div
       className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/10"
@@ -272,7 +273,7 @@ const AnimatedWaves = () => (
         </linearGradient>
       </defs>
     </motion.svg>
-    
+
     <motion.svg
       className="absolute top-0 right-0 w-full h-32 transform rotate-180"
       viewBox="0 0 1200 120"
@@ -308,6 +309,7 @@ const AnimatedWaves = () => (
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { setUser } = useUserStore();
   const [mounted, setMounted] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [formData, setFormData] = useState({
@@ -315,6 +317,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    accountType: "corporate" as "individual" | "corporate",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -374,7 +377,11 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      router.push("/");
+      setUser(data);
+
+      router.push(
+        formData.accountType === "individual" ? "/user/cards" : "/",
+      );
       setLoading(false);
     } catch (err) {
       setError("Kayıt işlemi başarısız. Lütfen tekrar deneyin.");
@@ -445,16 +452,16 @@ export default function RegisterPage() {
       <AnimatedWaves />
       <GeometricShapes />
       <FloatingParticles />
-      
+
       {/* Animated grid pattern */}
-      <motion.div 
+      <motion.div
         className="absolute inset-0 opacity-5"
         style={{
           backgroundImage: `radial-gradient(circle at 2px 2px, #22c55e 1px, transparent 0)`,
-          backgroundSize: '40px 40px',
+          backgroundSize: "40px 40px",
         }}
         animate={{
-          backgroundPosition: ['0px 0px', '40px 40px'],
+          backgroundPosition: ["0px 0px", "40px 40px"],
         }}
         transition={{
           duration: 20,
@@ -463,14 +470,14 @@ export default function RegisterPage() {
           ease: "linear",
         }}
       />
-      
+
       {/* Subtle spotlight effect */}
       <motion.div
         className="absolute inset-0"
         animate={{
           background: [
-            'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)',
-            'radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2) 0%, transparent 50%)',
+            "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)",
+            "radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2) 0%, transparent 50%)",
           ],
         }}
         transition={{
@@ -480,7 +487,7 @@ export default function RegisterPage() {
           ease: "easeInOut",
         }}
       />
-      
+
       <motion.div
         className="w-full max-w-lg p-3 relative z-10"
         variants={containerVariants}
@@ -489,7 +496,7 @@ export default function RegisterPage() {
       >
         {/* Header Section */}
         <motion.div className="text-center mb-8" variants={itemVariants}>
-          <motion.div 
+          <motion.div
             className="flex justify-center mb-6"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
@@ -498,21 +505,31 @@ export default function RegisterPage() {
               {/* Multiple layered glow effects */}
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-green-500 to-blue-500 rounded-full blur-lg opacity-30"
-                animate={{ 
+                animate={{
                   scale: [1, 1.2],
                   rotate: [0, 360],
                 }}
-                transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut",
+                }}
               />
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl opacity-20"
-                animate={{ 
+                animate={{
                   scale: [0.8, 1.3],
                   rotate: [360, 0],
                 }}
-                transition={{ duration: 5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut",
+                }}
               />
-              
+
               {/* Orbiting particles around logo */}
               <motion.div
                 className="absolute inset-0"
@@ -523,26 +540,40 @@ export default function RegisterPage() {
                   <motion.div
                     className="absolute w-2 h-2 bg-green-400 rounded-full top-0 left-1/2 transform -translate-x-1/2"
                     animate={{ scale: [0.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
                   />
                   <motion.div
                     className="absolute w-1.5 h-1.5 bg-blue-400 rounded-full bottom-0 left-1/2 transform -translate-x-1/2"
                     animate={{ scale: [1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", delay: 1 }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      delay: 1,
+                    }}
                   />
                 </div>
               </motion.div>
-              
+
               {/* Logo - Multiple fallbacks */}
-              <motion.div 
+              <motion.div
                 className="relative z-10 h-14 flex items-center justify-center"
                 animate={{ y: [0, -2] }}
-                transition={{ duration: 3, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut",
+                }}
               >
                 {!logoError ? (
-                  <motion.img 
-                    src="/company_logo.png" 
-                    alt="Şirket Logosu" 
+                  <motion.img
+                    src="/company_logo.png"
+                    alt="Şirket Logosu"
                     className="h-12 w-auto object-contain"
                     whileHover={{ rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
@@ -550,18 +581,24 @@ export default function RegisterPage() {
                       console.log("Company logo failed, trying default...");
                       e.currentTarget.src = "/defaultcompanylogo.png";
                       e.currentTarget.onerror = () => {
-                        console.log("Default logo also failed, showing text logo");
+                        console.log(
+                          "Default logo also failed, showing text logo",
+                        );
                         setLogoError(true);
                       };
                     }}
                   />
                 ) : (
-                  <motion.div 
+                  <motion.div
                     className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent"
-                    animate={{ 
+                    animate={{
                       backgroundPosition: ["0% 50%", "100% 50%"],
                     }}
-                    transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
                     style={{ backgroundSize: "200% 200%" }}
                   >
                     COMPANY
@@ -570,15 +607,15 @@ export default function RegisterPage() {
               </motion.div>
             </div>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-green-900 to-blue-900 bg-clip-text text-transparent mb-3"
             variants={itemVariants}
           >
             Hesap Oluşturun
           </motion.h1>
-          
-          <motion.div 
+
+          <motion.div
             className="flex items-center justify-center space-x-2 text-gray-600"
             variants={itemVariants}
           >
@@ -594,28 +631,35 @@ export default function RegisterPage() {
             {/* Enhanced Card glow effect with multiple layers */}
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-green-500/10 via-blue-500/10 to-purple-500/10 rounded-xl"
-              animate={{ 
+              animate={{
                 background: [
                   "linear-gradient(90deg, rgba(34,197,94,0.1) 0%, rgba(59,130,246,0.1) 50%, rgba(168,85,247,0.1) 100%)",
-                  "linear-gradient(180deg, rgba(168,85,247,0.1) 0%, rgba(34,197,94,0.1) 50%, rgba(59,130,246,0.1) 100%)"
-                ]
+                  "linear-gradient(180deg, rgba(168,85,247,0.1) 0%, rgba(34,197,94,0.1) 50%, rgba(59,130,246,0.1) 100%)",
+                ],
               }}
-              transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
             />
-            
+
             {/* Subtle pulsing border */}
             <motion.div
               className="absolute inset-0 rounded-xl border border-gradient-to-r from-green-300/20 via-blue-300/20 to-purple-300/20"
               animate={{
-                borderColor: [
-                  "rgba(34,197,94,0.2)",
-                  "rgba(59,130,246,0.2)"
-                ],
+                borderColor: ["rgba(34,197,94,0.2)", "rgba(59,130,246,0.2)"],
                 scale: [1, 1.005],
               }}
-              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
             />
-            
+
             <CardHeader className="space-y-1 pb-6 relative z-10">
               <CardTitle className="text-2xl flex items-center justify-center space-x-3">
                 <motion.div
@@ -650,13 +694,72 @@ export default function RegisterPage() {
               </AnimatePresence>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Name Field */}
-                <motion.div 
+                {/* Account Type */}
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <label htmlFor="name" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                    <User className="h-4 w-4 text-indigo-500" />
+                    <span>Üyelik Tipi</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          accountType: "individual",
+                        }))
+                      }
+                      className={`rounded-lg border-2 px-4 py-3 text-left transition-all duration-200 ${
+                        formData.accountType === "individual"
+                          ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Bireysel
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        Kişisel kartlarınızı yönetin
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          accountType: "corporate",
+                        }))
+                      }
+                      className={`rounded-lg border-2 px-4 py-3 text-left transition-all duration-200 ${
+                        formData.accountType === "corporate"
+                          ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Kurumsal
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        Ekip ve üyelerinizi yönetin
+                      </span>
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Name Field */}
+                <motion.div
+                  className="space-y-2"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <label
+                    htmlFor="name"
+                    className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                  >
                     <User className="h-4 w-4 text-green-500" />
                     <span>Ad Soyad</span>
                   </label>
@@ -674,7 +777,9 @@ export default function RegisterPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: formData.name ? "rgba(34,197,94,0.3)" : "transparent",
+                        borderColor: formData.name
+                          ? "rgba(34,197,94,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -682,12 +787,15 @@ export default function RegisterPage() {
                 </motion.div>
 
                 {/* Email Field */}
-                <motion.div 
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                  >
                     <Mail className="h-4 w-4 text-blue-500" />
                     <span>E-posta adresi</span>
                   </label>
@@ -706,7 +814,9 @@ export default function RegisterPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: formData.email ? "rgba(59,130,246,0.3)" : "transparent",
+                        borderColor: formData.email
+                          ? "rgba(59,130,246,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -714,12 +824,15 @@ export default function RegisterPage() {
                 </motion.div>
 
                 {/* Password Field */}
-                <motion.div 
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                  >
                     <Lock className="h-4 w-4 text-purple-500" />
                     <span>Şifre</span>
                   </label>
@@ -771,7 +884,9 @@ export default function RegisterPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: formData.password ? "rgba(168,85,247,0.3)" : "transparent",
+                        borderColor: formData.password
+                          ? "rgba(168,85,247,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -779,12 +894,15 @@ export default function RegisterPage() {
                 </motion.div>
 
                 {/* Confirm Password Field */}
-                <motion.div 
+                <motion.div
                   className="space-y-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                  >
                     <Lock className="h-4 w-4 text-orange-500" />
                     <span>Şifre Tekrar</span>
                   </label>
@@ -802,7 +920,9 @@ export default function RegisterPage() {
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <motion.button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center w-6 h-6"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -836,7 +956,9 @@ export default function RegisterPage() {
                     <motion.div
                       className="absolute inset-0 border-2 border-transparent rounded-lg pointer-events-none"
                       animate={{
-                        borderColor: formData.confirmPassword ? "rgba(249,115,22,0.3)" : "transparent",
+                        borderColor: formData.confirmPassword
+                          ? "rgba(249,115,22,0.3)"
+                          : "transparent",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -844,7 +966,7 @@ export default function RegisterPage() {
                 </motion.div>
 
                 {/* Terms Checkbox */}
-                <motion.div 
+                <motion.div
                   className="flex items-start space-x-3 p-4   rounded-lg"
                   whileHover={{ backgroundColor: "" }}
                 >
@@ -858,11 +980,17 @@ export default function RegisterPage() {
                     htmlFor="terms"
                     className="text-sm text-gray-600  cursor-pointer leading-relaxed"
                   >
-                    <Link href="#" className="text-green-600 hover:text-green-800 hover:underline font-medium">
+                    <Link
+                      href="#"
+                      className="text-green-600 hover:text-green-800 hover:underline font-medium"
+                    >
                       Kullanım Şartları
                     </Link>{" "}
                     ve{" "}
-                    <Link href="#" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                    <Link
+                      href="#"
+                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    >
                       Gizlilik Politikası
                     </Link>
                     &apos;nı kabul ediyorum
@@ -874,8 +1002,8 @@ export default function RegisterPage() {
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full py-3 bg-gradient-to-r from-green-600 via-blue-600 to-green-600 hover:from-green-700 hover:via-blue-700 hover:to-green-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                     disabled={loading}
                   >
@@ -891,7 +1019,11 @@ export default function RegisterPage() {
                           <motion.div
                             className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
                           />
                           <span>Hesap oluşturuluyor...</span>
                         </motion.div>
@@ -906,11 +1038,11 @@ export default function RegisterPage() {
                           <span>Hesap Oluştur</span>
                           <motion.div
                             animate={{ x: [0, 4] }}
-                            transition={{ 
-                              duration: 1.5, 
-                              repeat: Infinity, 
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
                               repeatType: "reverse",
-                              ease: "easeInOut" 
+                              ease: "easeInOut",
                             }}
                           >
                             <ArrowRight className="h-4 w-4" />
@@ -918,14 +1050,14 @@ export default function RegisterPage() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    
+
                     {/* Enhanced Button glow effects */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-400 opacity-0 rounded-lg"
                       whileHover={{ opacity: 0.3 }}
                       transition={{ duration: 0.3 }}
                     />
-                    
+
                     {/* Shimmer effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 group-hover:translate-x-full"
@@ -936,53 +1068,16 @@ export default function RegisterPage() {
                   </Button>
                 </motion.div>
               </form>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4  text-gray-500 font-medium">veya</span>
-                </div>
-              </div>
-
-              {/* Social Registration Buttons */}
-              <div className="space-y-3">
-                {/* Google Registration */}
-                <motion.button
-                  onClick={handleGoogleRegister}
-                  className="w-full flex items-center justify-center space-x-3 px-4 py-2 border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 group"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  <FcGoogle className="h-5 w-5" />
-                  <span className="text-gray-700 font-medium group-hover:text-gray-900">Google ile kayıt ol</span>
-                </motion.button>
-
-                {/* Apple Registration */}
-                <motion.button
-                  onClick={handleAppleRegister}
-                  className="w-full flex items-center justify-center space-x-3 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-all duration-300 group"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  <FaApple className="h-5 w-5" />
-                  <span className="font-medium">Apple ile kayıt ol</span>
-                </motion.button>
-              </div>
             </CardContent>
 
             <CardFooter className="flex justify-center border-t border-gray-100 p-6 relative z-10">
-              <motion.p 
+              <motion.p
                 className="text-sm text-gray-600 flex items-center space-x-1"
                 variants={itemVariants}
               >
                 <span>Zaten hesabınız var mı?</span>
-                <Link 
-                  href="/auth/login" 
+                <Link
+                  href="/auth/login"
                   className="text-green-600 hover:text-blue-600 font-medium transition-colors duration-200 hover:underline flex items-center space-x-1"
                 >
                   <span>Giriş Yap</span>
@@ -994,17 +1089,16 @@ export default function RegisterPage() {
         </motion.div>
 
         {/* Security Badge */}
-        <motion.div
-          className="mt-6 text-center"
-          variants={itemVariants}
-        >
+        <motion.div className="mt-6 text-center" variants={itemVariants}>
           <motion.div
             className="inline-flex items-center space-x-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-gray-200"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Shield className="h-4 w-4 text-green-500" />
-            <span className="text-xs text-gray-600 font-medium">Güvenli Kayıt Sistemi</span>
+            <span className="text-xs text-gray-600 font-medium">
+              Güvenli Kayıt Sistemi
+            </span>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </motion.div>
         </motion.div>

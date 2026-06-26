@@ -5,6 +5,7 @@ import UserCard from "@/schemas/mongoose/UserCard";
 import { isValidObjectId } from "mongoose";
 import { getUserIfTeamRoleAllowed } from "@/utils/decorators/team-role.decorator";
 import { saveFile } from "@/utils/upload";
+import User from "@/schemas/mongoose/User";
 
 interface TeamType {
   members: string[];
@@ -12,7 +13,7 @@ interface TeamType {
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
+  { params }: { params: Promise<{ teamId: string }> },
 ) {
   try {
     await dbConnect();
@@ -29,7 +30,7 @@ export async function POST(
     if (!Array.isArray(memberIds) || memberIds.length === 0) {
       return NextResponse.json(
         { error: "memberIds array is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,13 +50,13 @@ export async function POST(
     }
 
     const validMemberIds = memberIds.filter((id) =>
-      team.members.some((memberId) => memberId.toString() === id)
+      team.members.some((memberId) => memberId.toString() === id),
     );
 
     if (validMemberIds.length === 0) {
       return NextResponse.json(
         { error: "No valid team members found" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,7 +67,7 @@ export async function POST(
     if (!coverPhotoFile && !companyLogoFile && !profilePictureFile) {
       return NextResponse.json(
         { error: "No files uploaded for update" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -78,7 +79,7 @@ export async function POST(
         coverPhotoFile,
         user._id.toString(),
         {},
-        ext
+        ext,
       );
     }
 
@@ -88,7 +89,7 @@ export async function POST(
         companyLogoFile,
         user._id.toString(),
         {},
-        ext
+        ext,
       );
     }
 
@@ -98,7 +99,7 @@ export async function POST(
         profilePictureFile,
         user._id.toString(),
         {},
-        ext
+        ext,
       );
     }
 
@@ -106,16 +107,44 @@ export async function POST(
       const firstUserCard = await UserCard.findOne({ user: memberId }).sort({
         createdAt: 1,
       });
-      if (!firstUserCard) return null;
 
+      const user = await User.findById(memberId);
+
+      if (!firstUserCard || !user) return null;
+
+      // 1. UserCard update
       if (updateData.coverPhoto)
         firstUserCard.coverPhoto = updateData.coverPhoto;
+
       if (updateData.companyLogo)
         firstUserCard.companyLogo = updateData.companyLogo;
+
       if (updateData.profilePicture)
         firstUserCard.profilePicture = updateData.profilePicture;
 
-      return firstUserCard.save();
+      await firstUserCard.save();
+
+      // 2. User profileImage update
+      if (updateData.profilePicture) {
+        user.profileImage = updateData.profilePicture;
+      }
+
+      // 3. User.userCard array update
+      if (updateData.profilePicture && Array.isArray(user.userCard)) {
+        user.userCard = user.userCard.map((card: any) => {
+          if (card.cardId.toString() === firstUserCard._id.toString()) {
+            return {
+              ...(card.toObject?.() ?? card),
+              cardProfileImage: updateData.profilePicture,
+            };
+          }
+          return card;
+        });
+      }
+
+      await user.save();
+
+      return firstUserCard;
     });
 
     const results = await Promise.all(updatePromises);
@@ -124,13 +153,13 @@ export async function POST(
 
     return NextResponse.json(
       { message: `${updatedCount} user cards updated.` },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

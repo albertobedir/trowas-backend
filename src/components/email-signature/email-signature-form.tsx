@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useEmailSignatures, EmailSignature } from "@/hooks/use-email-signatures";
 import { Api } from "@/lib/api";
 import { 
   Instagram, 
@@ -34,10 +33,33 @@ import {
 } from "@/components/ui/select";
 
 interface EmailSignatureFormProps {
-  teamId: string;
+  signatureId: string;
+  initialSignature?: EmailSignatureDocument | null;
   onSuccess?: () => void;
-  initialData?: Partial<EmailSignature>;
   onCancel?: () => void;
+}
+
+export interface EmailSignatureDocument {
+  _id: string;
+  signatureName: string;
+  information?: {
+    name?: boolean;
+    pronouns?: boolean;
+    jobtitle?: boolean;
+    companyname?: boolean;
+    location?: boolean;
+    email?: boolean;
+    phoneNumber?: boolean;
+  };
+  images?: {
+    profilepic?: boolean;
+    companylogo?: boolean;
+    qrcode?: boolean;
+    showBanner?: boolean;
+    banner?: string;
+  };
+  disclaimer?: string;
+  users?: Array<{ _id: string; name: string; email: string; profileImage?: string }>;
 }
 
 interface FormState {
@@ -69,86 +91,119 @@ interface FormState {
   theme: string;
 }
 
-interface SocialLink {
-  id: string;
-  type: string;
-  url: string;
-  icon?: React.ReactNode;
+const defaultFormState: FormState = {
+  name: "",
+  showName: true,
+  showPronouns: false,
+  showJobTitle: true,
+  showCompanyName: true,
+  showLocation: true,
+  showEmail: true,
+  showPhoneNumber: true,
+  showProfilePic: true,
+  showCompanyLogo: true,
+  showQRCode: false,
+  showBanner: true,
+  jobTitle: "Job Title",
+  companyName: "Company Name",
+  location: "Location",
+  phoneNumber: "+1 000 000 0000",
+  email: "email@example.com",
+  pronouns: "",
+  profilePic: "",
+  companyLogo: "",
+  bannerImage: "/emailSignatureBgTemp1.png",
+  links: [],
+  colorIcons: true,
+  disclaimer: "",
+  theme: "theme1",
+};
+
+function mapSignatureToFormState(
+  signatureData: EmailSignatureDocument,
+  previous: FormState = defaultFormState,
+): FormState {
+  const assignedMember = signatureData.users?.[0];
+
+  return {
+    ...previous,
+    name: signatureData.signatureName || "",
+    showName: signatureData.information?.name ?? true,
+    showPronouns: signatureData.information?.pronouns ?? false,
+    showJobTitle: signatureData.information?.jobtitle ?? true,
+    showCompanyName: signatureData.information?.companyname ?? true,
+    showLocation: signatureData.information?.location ?? true,
+    showEmail: signatureData.information?.email ?? true,
+    showPhoneNumber: signatureData.information?.phoneNumber ?? true,
+    showProfilePic: signatureData.images?.profilepic ?? true,
+    showCompanyLogo: signatureData.images?.companylogo ?? true,
+    showQRCode: signatureData.images?.qrcode ?? false,
+    showBanner:
+      signatureData.images?.showBanner ??
+      Boolean(signatureData.images?.banner),
+    bannerImage:
+      signatureData.images?.banner || previous.bannerImage,
+    disclaimer: signatureData.disclaimer || "",
+    profilePic: assignedMember?.profileImage || previous.profilePic,
+    email: assignedMember?.email || previous.email,
+  };
 }
 
-// Social media icon map
-
-
 export function EmailSignatureForm({
-  teamId,
+  signatureId,
+  initialSignature,
   onSuccess,
-  initialData,
-  onCancel
+  onCancel,
 }: EmailSignatureFormProps) {
-  const [formState, setFormState] = useState<FormState>({
-    name: initialData?.name || "",
-    showName: true,
-    showPronouns: false,
-    showJobTitle: true,
-    showCompanyName: true,
-    showLocation: true,
-    showEmail: true,
-    showPhoneNumber: true,
-    showProfilePic: true,
-    showCompanyLogo: true,
-    showQRCode: false,
-    showBanner: true,
-    jobTitle: initialData?.settings?.jobTitle || "Co-Founder",
-    companyName: initialData?.settings?.companyName || "Babel Agency",
-    location: initialData?.settings?.location || "Bursa, Turkey",
-    phoneNumber: initialData?.settings?.phoneNumber || "+90 555 123 4567",
-    email: initialData?.settings?.email || "contact@babel.agency",
-    pronouns: initialData?.settings?.pronouns || "",
-    profilePic: initialData?.settings?.profilePic || "",
-    companyLogo: initialData?.settings?.companyLogo || "",
-    bannerImage: initialData?.settings?.bannerImage || "/emailSignatureBgTemp1.png",
-    links: initialData?.settings?.links || [],
-    colorIcons: initialData?.settings?.colorIcons || true,
-    disclaimer: initialData?.settings?.disclaimer || "",
-    theme: initialData?.settings?.theme || "theme1"
-  });
-
-  useEffect(() => {
-    const fetchEmailSignature = async () => {
-      try {
-        const response = await Api.get(`email-signature/${teamId}`);
-        console.log('Email Signature Response:', response.data);
-        
-        const signatureData = response.data.signature;
-        
-        setFormState(prev => ({
-          ...prev,
-          showName: signatureData.information.name,
-          showPronouns: signatureData.information.pronouns,
-          showJobTitle: signatureData.information.jobtitle,
-          showCompanyName: signatureData.information.companyname,
-          showLocation: signatureData.information.location,
-          showProfilePic: signatureData.images.profilepic,
-          showCompanyLogo: signatureData.images.companylogo,
-          showQRCode: signatureData.images.qrcode,
-          bannerImage: signatureData.images.banner || prev.bannerImage,
-          disclaimer: signatureData.disclaimer || prev.disclaimer
-        }));
-      } catch (error) {
-        console.error('Error fetching email signature:', error);
-      }
-    };
-
-    if (teamId) {
-      fetchEmailSignature();
-    }
-  }, [teamId]);
-
+  const [formState, setFormState] = useState<FormState>(() =>
+    initialSignature
+      ? mapSignatureToFormState(initialSignature, defaultFormState)
+      : defaultFormState,
+  );
+  const [isLoadingSignature, setIsLoadingSignature] = useState(!initialSignature);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSocialType, setSelectedSocialType] = useState<string>("instagram");
   const [linkUrl, setLinkUrl] = useState<string>("");
   const { toast } = useToast();
-  const { createSignature, updateSignature } = useEmailSignatures({ teamId });
+
+  useEffect(() => {
+    if (initialSignature || !signatureId) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchEmailSignature = async () => {
+      try {
+        setIsLoadingSignature(true);
+        const response = await Api.get(`/email-signature/${signatureId}`);
+
+        if (!isCancelled) {
+          setFormState((prev) =>
+            mapSignatureToFormState(response.data.signature, prev),
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching email signature:", error);
+        if (!isCancelled) {
+          toast({
+            title: "Error",
+            description: "Failed to load email signature.",
+          });
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSignature(false);
+        }
+      }
+    };
+
+    fetchEmailSignature();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [signatureId, initialSignature]);
 
   // File upload handling
   const handleFileUpload = async (fileType: "profilePic" | "companyLogo" | "bannerImage", e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,20 +315,16 @@ export function EmailSignatureForm({
         formData.append('bannerImage', formState.bannerImageFile);
       }
 
-      if (teamId) {
-        await Api.patch(`/email-signature/${teamId}/update`, formData, {
+      if (signatureId) {
+        await Api.patch(`/email-signature/${signatureId}/update`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
         });
-        toast({ title: "Success", description: "Email signature updated successfully" });
-      } else {
-        await Api.patch(`/email-signature/${teamId}/update`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        toast({
+          title: "Success",
+          description: "Email signature updated successfully",
         });
-        toast({ title: "Success", description: "Email signature created successfully" });
       }
 
       if (onSuccess) {
@@ -558,6 +609,14 @@ export function EmailSignatureForm({
       previewContainer.appendChild(previewWrapper);
     }
   }, [formState]);
+
+  if (isLoadingSignature) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center text-sm text-muted-foreground">
+        Loading signature settings...
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

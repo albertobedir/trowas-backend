@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import UserCard from "@/schemas/mongoose/UserCard";
 import CardTemplate from "@/schemas/mongoose/Template";
 import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
+import { isAdminFromRequest } from "@/utils/decorators/admin-decorator";
 import { isValidObjectId } from "mongoose";
 import { UserCardUpdateSchema } from "@/schemas/zod/user";
 import User from "@/schemas/mongoose/User";
@@ -22,8 +23,9 @@ export async function PATCH(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
-    const sessionId = await getUserIdFromToken(req);
-    if (!sessionId || !isValidObjectId(sessionId)) {
+    const isAdmin = await isAdminFromRequest(req);
+    const sessionId = isAdmin ? null : await getUserIdFromToken(req);
+    if (!isAdmin && (!sessionId || !isValidObjectId(sessionId))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const url = new URL(req.url);
@@ -105,7 +107,7 @@ export async function PATCH(
     }
 
     const validation = UserCardUpdateSchema.safeParse({
-      permission: user.permissions.subTeamPermission,
+      permission: isAdmin ? "0" : user.permissions.subTeamPermission,
       ...rawFields,
     });
 
@@ -153,21 +155,23 @@ export async function PATCH(
       mappingIndex = user.userCard.length - 1;
     }
 
-    if (sessionId !== userId) {
-      const userWithRole = await getUserIfTeamRoleAllowed(req, [
-        "owner",
-        "manager",
-      ]);
-      if (!userWithRole) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isAdmin) {
+      if (sessionId !== userId) {
+        const userWithRole = await getUserIfTeamRoleAllowed(req, [
+          "owner",
+          "manager",
+        ]);
+        if (!userWithRole) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
       }
-    }
 
-    if (user.roles.teamRole === "pending" && sessionId !== userId) {
-      return NextResponse.json(
-        { error: "User is pending and cannot be updated by others" },
-        { status: 403 },
-      );
+      if (user.roles.teamRole === "pending" && sessionId !== userId) {
+        return NextResponse.json(
+          { error: "User is pending and cannot be updated by others" },
+          { status: 403 },
+        );
+      }
     }
 
     if (teamTemplateId) {

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import UserCard from "@/schemas/mongoose/UserCard";
 import CardTemplate from "@/schemas/mongoose/Template"; // Template modelini import ediyoruz
 import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
+import { isAdminFromRequest } from "@/utils/decorators/admin-decorator";
 import User from "@/schemas/mongoose/User";
 import { isValidObjectId } from "mongoose";
 import { getUserIfTeamRoleAllowed } from "@/utils/decorators/team-role.decorator";
@@ -16,8 +17,9 @@ export async function PATCH(
     const indexParam = url.searchParams.get("index");
     const cardIndex = Number(indexParam);
 
-    const sessionId = await getUserIdFromToken(req);
-    if (!sessionId || !isValidObjectId(sessionId)) {
+    const isAdmin = await isAdminFromRequest(req);
+    const sessionId = isAdmin ? null : await getUserIdFromToken(req);
+    if (!isAdmin && (!sessionId || !isValidObjectId(sessionId))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -89,22 +91,23 @@ export async function PATCH(
       );
     }
 
-    // Yetki kontrolü
-    if (sessionId !== userId) {
-      const userWithRole = await getUserIfTeamRoleAllowed(req, [
-        "owner",
-        "manager",
-      ]);
-      if (!userWithRole) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isAdmin) {
+      if (sessionId !== userId) {
+        const userWithRole = await getUserIfTeamRoleAllowed(req, [
+          "owner",
+          "manager",
+        ]);
+        if (!userWithRole) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
       }
-    }
 
-    if (user.roles.teamRole === "pending" && sessionId !== userId) {
-      return NextResponse.json(
-        { error: "User is pending and cannot be updated by others" },
-        { status: 403 },
-      );
+      if (user.roles.teamRole === "pending" && sessionId !== userId) {
+        return NextResponse.json(
+          { error: "User is pending and cannot be updated by others" },
+          { status: 403 },
+        );
+      }
     }
 
     // Eğer body içinde templateId varsa, Template'i buluyoruz

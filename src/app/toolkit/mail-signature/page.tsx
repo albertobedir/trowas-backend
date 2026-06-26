@@ -1,6 +1,5 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { usePageLoading } from "@/hooks/use-page-loading";
@@ -52,9 +51,9 @@ export default function MailSignaturePage() {
     setSortDirection(prev => prev === "asc" ? "desc" : "asc");
   };
 
-  const handleSignatureCreated = () => {
-    // In a real app, we would refresh the signatures from the API
-    console.log("Signature created, should refresh data");
+  const handleSignatureCreated = async () => {
+    const response = await Api.get("/email-signature/get-all");
+    setSignatures(response.data.signatures || []);
   };
 
   const handleUpdateMembers = async (signatureId: string, updatedMembers: Member[]) => {
@@ -76,9 +75,12 @@ export default function MailSignaturePage() {
       if (add.length > 0 || remove.length > 0) {
         await Api.patch(`/email-signature/${signatureId}/assign`, {
           add,
-          remove
+          remove,
         });
       }
+
+      const refreshed = await Api.get("/email-signature/get-all");
+      setSignatures(refreshed.data.signatures || []);
 
       return Promise.resolve();
     } catch (error) {
@@ -103,15 +105,10 @@ export default function MailSignaturePage() {
     <div className="container mx-auto py-6 px-10">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-semibold">Email Signature Templates <span className="text-sm text-gray-400">({signatures.length})</span></h1>
-        <div className="flex gap-2">
-          <Button variant="outline" className="text-sm rounded-full">
-            Set Up Email Integrations
-          </Button>
-          <EmailSignatureDialog 
-            teamId={teamId}
-            onSuccess={handleSignatureCreated}
-          />
-        </div>
+        <EmailSignatureDialog 
+          teamId={teamId}
+          onSuccess={handleSignatureCreated}
+        />
       </div>
       
       <div className="bg-white rounded-lg shadow">
@@ -146,14 +143,16 @@ export default function MailSignaturePage() {
                   </div>
                 </TableCell>
                 <TableCell className="cursor-pointer" onClick={() => handleSignatureClick(signature._id)}>{signature.createdAt}</TableCell>
-                <TableCell className="cursor-pointer" onClick={() => handleSignatureClick(signature._id)}>{signature.users.length} members</TableCell>
+                <TableCell className="cursor-pointer" onClick={() => handleSignatureClick(signature._id)}>
+                  {signature.users?.length || 0} members
+                </TableCell>
                 <TableCell className="text-right">
                   <ManageMembersDialog
                     signatureId={signature._id}
                     signatureName={signature.signatureName}
-                    currentMembers={members.slice(0, signature.users.length)}
+                    currentMembers={signature.users || []}
                     allTeamMembers={members}
-                    onSave={(members) => handleUpdateMembers(signature._id, members)}
+                    onSave={(updatedMembers) => handleUpdateMembers(signature._id, updatedMembers)}
                   />
                 </TableCell>
               </TableRow>

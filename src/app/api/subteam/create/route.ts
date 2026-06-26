@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     if (permissions === undefined) {
       return NextResponse.json(
         { error: "Permissions are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     if (!team) {
       return NextResponse.json(
         { error: "Parent team not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -63,6 +63,10 @@ export async function POST(req: Request) {
       logo: logoUrl,
     });
 
+    await Team.findByIdAndUpdate(team._id, {
+      $push: { subteams: newSubTeam._id },
+    });
+
     if (!user.subTeams) user.subTeams = [];
     user.subTeams.push(newSubTeam._id);
 
@@ -76,13 +80,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "SubTeam created successfully", subTeam: newSubTeam },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating subteam:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -13,6 +13,8 @@ const emailSignatureSchema = new Schema(
       jobtitle: { type: Boolean, default: false },
       companyname: { type: Boolean, default: false },
       location: { type: Boolean, default: false },
+      email: { type: Boolean, default: false },
+      phoneNumber: { type: Boolean, default: false },
     },
     images: {
       profilepic: { type: Boolean, default: false },

@@ -45,12 +45,12 @@ export async function POST(req: Request) {
       email: formData.get("showEmail") === "true",
       phoneNumber: formData.get("showPhoneNumber") === "true",
     };
-
     const images = {
       profilepic: formData.get("showProfilePic") === "true",
       companylogo: formData.get("showCompanyLogo") === "true",
       qrcode: formData.get("showQRCode") === "true",
-      banner: "", // eğer varsa aşağıda dosya olarak kaydedilecek
+      showBanner: formData.get("showBanner") === "true",
+      banner: "",
     };
 
     // Banner görseli dosya olarak geldi mi?
