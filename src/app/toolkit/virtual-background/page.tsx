@@ -5425,7 +5425,7 @@ const MemberDetailPage = () => {
                             transform: `scale(${scaleX})`,
                             transformOrigin: "top left",
                           },
-                          filter: (node: HTMLElement) => {
+                          filter: (node: Node) => {
                             if (
                               node instanceof HTMLImageElement &&
                               node.alt === "Selected virtual background preview"
