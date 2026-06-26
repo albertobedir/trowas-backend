@@ -210,34 +210,34 @@ export function DashboardStatsOverview({
 
   const revenueKpis = [
     {
-      label: "Monthly Recurring Revenue",
+      label: "Aylık Yinelenen Gelir",
       value: formatCurrency(summary.mrr),
-      sublabel: "Paid subscriptions only",
-      trend: { value: "+14.2% vs last month", positive: true },
+      sublabel: "Yalnızca ücretli abonelikler",
+      trend: { value: "Geçen aya göre +%14,2", positive: true },
       icon: DollarSign,
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
-      label: "Annual Run Rate",
+      label: "Yıllık Gelir Tahmini",
       value: formatCurrency(summary.arr),
-      sublabel: "Projected yearly revenue",
-      trend: { value: "+14.2% YoY", positive: true },
+      sublabel: "Projeksiyon yıllık gelir",
+      trend: { value: "Yıllık +%14,2", positive: true },
       icon: TrendingUp,
       accent: "bg-blue-50 text-blue-600",
     },
     {
-      label: "Active Subscribers",
+      label: "Aktif Aboneler",
       value: loading ? "—" : String(summary.paidSubscribers),
-      sublabel: `${summary.totalSubscribers.toLocaleString()} total accounts`,
-      trend: { value: "+9.8% this month", positive: true },
+      sublabel: `${summary.totalSubscribers.toLocaleString()} toplam hesap`,
+      trend: { value: "Bu ay +%9,8", positive: true },
       icon: CreditCard,
       accent: "bg-violet-50 text-violet-600",
     },
     {
-      label: "Avg. Revenue / User",
+      label: "Ort. Gelir / Kullanıcı",
       value: formatCurrency(summary.arpu),
-      sublabel: "Paid tier average",
-      trend: { value: "+3.1%", positive: true },
+      sublabel: "Ücretli plan ortalaması",
+      trend: { value: "+%3,1", positive: true },
       icon: Sparkles,
       accent: "bg-indigo-50 text-indigo-600",
     },
@@ -245,30 +245,30 @@ export function DashboardStatsOverview({
 
   const userKpis = [
     {
-      label: "Total Users",
+      label: "Toplam Kullanıcı",
       value: loading ? "—" : (liveStats?.total ?? 0).toLocaleString(),
-      sublabel: "Live from database",
+      sublabel: "Veritabanından canlı",
       icon: Users,
       accent: "bg-blue-50 text-blue-600",
     },
     {
-      label: "VIP Members",
+      label: "VIP Üyeler",
       value: loading ? "—" : String(liveStats?.vip ?? summary.vipSubscribers),
-      sublabel: `${formatCurrency(summary.vipRevenue)} VIP MRR`,
+      sublabel: `${formatCurrency(summary.vipRevenue)} VIP AYG`,
       icon: Crown,
       accent: "bg-amber-50 text-amber-600",
     },
     {
-      label: "Corporate Accounts",
+      label: "Kurumsal Hesaplar",
       value: loading ? "—" : (liveStats?.corporate ?? 0).toLocaleString(),
-      sublabel: `${loading ? "—" : (liveStats?.individual ?? 0).toLocaleString()} individual`,
+      sublabel: `${loading ? "—" : (liveStats?.individual ?? 0).toLocaleString()} bireysel`,
       icon: Building2,
       accent: "bg-violet-50 text-violet-600",
     },
     {
-      label: "Conversion Rate",
+      label: "Dönüşüm Oranı",
       value: `${summary.conversionRate}%`,
-      sublabel: `${summary.churnRate}% monthly churn`,
+      sublabel: `%${summary.churnRate} aylık kayıp`,
       icon: User,
       accent: "bg-teal-50 text-teal-600",
     },
@@ -280,19 +280,19 @@ export function DashboardStatsOverview({
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
             <Sparkles className="h-3.5 w-3.5" />
-            Subscription analytics preview
+            Abonelik analitiği önizlemesi
           </div>
           <h2 className="mt-3 text-2xl font-bold text-slate-900">
-            Revenue & Tier Overview
+            Gelir ve Katman Özeti
           </h2>
           <p className="mt-1 max-w-2xl text-slate-600">
-            Tier distribution, VIP performance, and subscription revenue.
-            Subscription metrics use sample data; user counts are live.
+            Katman dağılımı, VIP performansı ve abonelik geliri.
+            Abonelik metrikleri örnek veridir; kullanıcı sayıları canlıdır.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          Last 30 days
+          Son 30 gün
         </div>
       </div>
 
@@ -311,9 +311,9 @@ export function DashboardStatsOverview({
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="border-slate-200 shadow-sm xl:col-span-2">
           <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
+            <CardTitle>Gelir Trendi</CardTitle>
             <CardDescription>
-              MRR and subscriber growth over the last 6 months
+              Son 6 ayda AYG ve abone artışı
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -335,7 +335,7 @@ export function DashboardStatsOverview({
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       name === "revenue" ? formatCurrency(value) : value,
-                      name === "revenue" ? "Revenue" : "Subscribers",
+                      name === "revenue" ? "Gelir" : "Aboneler",
                     ]}
                     contentStyle={{
                       borderRadius: "12px",
@@ -357,8 +357,8 @@ export function DashboardStatsOverview({
 
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Subscribers by Tier</CardTitle>
-            <CardDescription>Share of users across plans</CardDescription>
+            <CardTitle>Katmanlara Göre Aboneler</CardTitle>
+            <CardDescription>Planlar arası kullanıcı payı</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-52 w-full">
@@ -415,7 +415,7 @@ export function DashboardStatsOverview({
 
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle>Tier Performance</CardTitle>
+          <CardTitle>Katman Performansı</CardTitle>
           <CardDescription>
             Subscribers, revenue, and growth by subscription tier
           </CardDescription>
@@ -515,7 +515,7 @@ export function DashboardStatsOverview({
             <div className="flex items-center gap-2">
               <Crown className="h-5 w-5 text-amber-500" />
               <div>
-                <CardTitle>Top VIP Accounts</CardTitle>
+                <CardTitle>En İyi VIP Hesaplar</CardTitle>
                 <CardDescription>Highest-value VIP subscribers</CardDescription>
               </div>
             </div>
@@ -557,7 +557,7 @@ export function DashboardStatsOverview({
 
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Recent Subscription Activity</CardTitle>
+            <CardTitle>Son Abonelik Aktivitesi</CardTitle>
             <CardDescription>New signups, upgrades, and renewals</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -611,7 +611,7 @@ export function DashboardStatsOverview({
             color: "text-teal-600 bg-teal-50",
           },
           {
-            label: "Admin Roles",
+            label: "Admin Rolleri",
             value: loading ? "—" : (liveStats?.admins ?? 0).toLocaleString(),
             icon: ShieldCheck,
             color: "text-rose-600 bg-rose-50",
@@ -652,7 +652,7 @@ export function DashboardStatsOverview({
 
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>Hızlı İşlemler</CardTitle>
           <CardDescription>
             Jump into user, team, and lead management
           </CardDescription>

@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Api } from "@/lib/api";
+import { toast } from "sonner";
 
 // Mock data for email signatures
 interface EmailSignature {
@@ -58,25 +59,38 @@ export default function MailSignaturePage() {
 
   const handleUpdateMembers = async (signatureId: string, updatedMembers: Member[]) => {
     try {
-      // Get current signature data to compare
       const response = await Api.get(`/email-signature/${signatureId}`);
       const currentMembers = response.data.signature.users || [];
+      const getMemberId = (member: { _id?: string | null }) =>
+        member?._id ? String(member._id) : "";
 
-      // Find added and removed members
-      const add = updatedMembers.filter(member => 
-        !currentMembers.some((current: any) => current._id === member._id)
-      ).map(member => member._id);
+      const add = updatedMembers
+        .filter(
+          (member) =>
+            !currentMembers.some(
+              (current: { _id?: string }) =>
+                getMemberId(current) === getMemberId(member),
+            ),
+        )
+        .map((member) => getMemberId(member))
+        .filter(Boolean);
 
       const remove = currentMembers
-        .filter((current: any) => !updatedMembers.some(member => member._id === current._id))
-        .map((member: any) => member._id);
+        .filter(
+          (current: { _id?: string }) =>
+            !updatedMembers.some(
+              (member) => getMemberId(member) === getMemberId(current),
+            ),
+        )
+        .map((member: { _id?: string }) => getMemberId(member))
+        .filter(Boolean);
 
-      // Only make the API call if there are changes
       if (add.length > 0 || remove.length > 0) {
         await Api.patch(`/email-signature/${signatureId}/assign`, {
           add,
           remove,
         });
+        toast.success("Member assignments updated.");
       }
 
       const refreshed = await Api.get("/email-signature/get-all");

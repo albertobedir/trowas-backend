@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import { WebflowPageContent } from "@/components/webflow/WebflowPageContent";
-import { fixMarketingImageUrlsHtml } from "@/lib/webflow/fix-marketing-image-urls";
+import { fixMarketingImageUrlsHtml, normalizeMarketingBrandingHtml } from "@/lib/webflow/fix-marketing-image-urls";
 import { injectMarketingDashboardLinksHtml } from "@/lib/webflow/inject-marketing-dashboard-links";
 import { removeMarketingTrialCtasHtml } from "@/lib/webflow/remove-marketing-trial-ctas";
 import manifest from "@/lib/webflow/manifest.json";
@@ -20,7 +20,9 @@ export function createWebflowPage(key: WebflowPageKey) {
     );
     const html = injectMarketingDashboardLinksHtml(
       removeMarketingTrialCtasHtml(
-        fixMarketingImageUrlsHtml(fs.readFileSync(htmlPath, "utf8")),
+        normalizeMarketingBrandingHtml(
+          fixMarketingImageUrlsHtml(fs.readFileSync(htmlPath, "utf8")),
+        ),
       ),
     );
     return <WebflowPageContent html={html} />;

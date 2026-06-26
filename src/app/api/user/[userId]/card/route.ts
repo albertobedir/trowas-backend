@@ -69,7 +69,11 @@ export async function GET(
     const selectedCard = userCards[cardIndex];
 
     return NextResponse.json(
-      { userCard: selectedCard, username: user.username },
+      {
+        userCard: selectedCard,
+        username: user.username,
+        emailSignature: user.emailSignature || null,
+      },
       { status: 200 },
     );
   } catch (error) {

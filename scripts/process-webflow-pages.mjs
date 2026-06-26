@@ -43,8 +43,8 @@ function processBody(html) {
 
   body = body.replace(/\sstyle="[^"]*opacity:0[^"]*"/gi, "");
 
-  body = body.replace(/\bSincra\b/g, "Rol Card");
-  body = body.replace(/\bSinco\b/g, "Rol Card");
+  body = body.replace(/\bSincra\b/g, "RolCard");
+  body = body.replace(/\bSinco\b/g, "RolCard");
   body = body.replace(
     /695982a63e42fad24a9986cd_Sincra\.svg/g,
     "RolCard.svg"
@@ -54,7 +54,7 @@ function processBody(html) {
     "RolCard.svg"
   );
   body = body.replace(/Trowas\.svg/g, "RolCard.svg");
-  body = body.replace(/\bTrowas\b/g, "Rol Card");
+  body = body.replace(/\bTrowas\b/g, "RolCard");
 
   const routeReplacements = [
     ['href="index.html"', 'href="/homepage"'],
@@ -80,7 +80,7 @@ function processBody(html) {
 
   body = body.replace(
     /<div class="paragraph-02">©[\s\S]*?<\/div>(?=<a href="#" class="back-to-top-button)/,
-    '<div class="paragraph-02">Rol Card</div>'
+    '<div class="paragraph-02">RolCard</div>'
   );
 
   body = simplifyNavbar(body);
@@ -137,14 +137,14 @@ function simplifyNavbar(body) {
 function extractMeta(html) {
   const title =
     html.match(/<title>([^<]+)<\/title>/)?.[1]?.replace(/\s*-\s*Sincra.*/i, "") ??
-    "Rol Card";
+    "RolCard";
   const description =
     html.match(/name="description" content="([^"]+)"/)?.[1] ??
-    "Rol Card is a smart SaaS solution to automate your workflow.";
+    "RolCard is a smart SaaS solution to automate your workflow.";
 
   return {
-    title: title.includes("Rol Card") ? title : `${title} - Rol Card`,
-    description: description.replace(/\bSincra\b/g, "Rol Card"),
+    title: title.includes("RolCard") ? title : `${title} - RolCard`,
+    description: description.replace(/\bSincra\b/g, "RolCard"),
   };
 }
 
@@ -163,7 +163,7 @@ for (const page of pages) {
   const key = page.output.replace(".html", "");
   manifest[key] = {
     contentFile: page.output,
-    title: meta.title.replace(/\bSincra\b/g, "Rol Card"),
+    title: meta.title.replace(/\bSincra\b/g, "RolCard"),
     description: meta.description,
   };
 

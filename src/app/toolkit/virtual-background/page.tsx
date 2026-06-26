@@ -5320,14 +5320,15 @@ const MemberDetailPage = () => {
             <div className="text-xs flex flex-col space-y-5 text-center">
               <p className="text-[#828282] font-semibold">Virtual background preview</p>
             </div>
-            <div className="w-full mt-4 rounded-xl overflow-hidden shadow-sm relative virtual-background-preview">
-              <div className="relative">
+            <div className="w-full mt-4 rounded-xl overflow-hidden shadow-sm relative virtual-background-preview" style={{ maxWidth: "960px", aspectRatio: "16/9" }}>
+              <div className="relative w-full h-full">
                 <Image
                   src={selectedVirtualBackground || `/virtualBackground/1.jpeg`}
                   alt="Selected virtual background preview"
-                  className="w-full object-cover aspect-[16/9]"
-                  width={360}
-                  height={640}
+                  className="w-full h-full object-cover"
+                  fill
+                  sizes="960px"
+                  priority
                 />
 
                 {/* Member info overlay at top left */}
@@ -5373,42 +5374,96 @@ const MemberDetailPage = () => {
                 variant="outline"
                 className="rounded-full py-5 flex items-center justify-center gap-2"
                 onClick={async () => {
-                  // Import html2canvas dynamically
-                  const html2canvas = (await import('html2canvas')).default;
+                  const domtoimage = (await import("dom-to-image")).default;
+                  const element = document.querySelector(".virtual-background-preview");
+                  if (!element) return;
 
-                  // Get the virtual background preview element
-                  const element = document.querySelector('.virtual-background-preview');
-                  if (element) {
-                    // Create a loading state or notification
-                    showNotification("Preparing download...", "success");
+                  showNotification("Preparing download...", "success");
 
-                    try {
-                      // Capture the entire element including overlays as a canvas
-                      const canvas = await html2canvas(element as HTMLElement, {
-                        useCORS: true,
-                        allowTaint: true,
-                        background: undefined,
-                      });
+                  try {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
 
-                      // Convert canvas to blob
-                      canvas.toBlob((blob) => {
-                        if (blob) {
-                          // Create download link for the captured image
-                          const downloadLink = document.createElement('a');
+                    canvas.width = 1920;
+                    canvas.height = 1080;
+
+                    const backgroundUrl =
+                      selectedVirtualBackground || `/virtualBackground/1.jpeg`;
+                    const backgroundImg = document.createElement("img");
+                    backgroundImg.crossOrigin = "anonymous";
+
+                    backgroundImg.onload = async () => {
+                      ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+                      const relativeContainer = element.querySelector(".relative");
+                      if (!relativeContainer) {
+                        canvas.toBlob((blob) => {
+                          if (!blob) return;
+                          const downloadLink = document.createElement("a");
+                          downloadLink.href = URL.createObjectURL(blob);
+                          downloadLink.download = `virtual-background-${memberId}.png`;
+                          downloadLink.click();
+                          URL.revokeObjectURL(downloadLink.href);
+                          showNotification("Background downloaded successfully!", "success");
+                        }, "image/png", 1);
+                        return;
+                      }
+
+                      const containerRect = relativeContainer.getBoundingClientRect();
+                      const scaleX = canvas.width / containerRect.width;
+                      const scaleY = canvas.height / containerRect.height;
+
+                      const overlayDataUrl = await domtoimage.toPng(
+                        relativeContainer as HTMLElement,
+                        {
+                          quality: 1,
+                          bgcolor: "transparent",
+                          width: containerRect.width * scaleX,
+                          height: containerRect.height * scaleY,
+                          style: {
+                            transform: `scale(${scaleX})`,
+                            transformOrigin: "top left",
+                          },
+                          filter: (node: HTMLElement) => {
+                            if (
+                              node instanceof HTMLImageElement &&
+                              node.alt === "Selected virtual background preview"
+                            ) {
+                              return false;
+                            }
+                            return true;
+                          },
+                        },
+                      );
+
+                      const overlayImg = document.createElement("img");
+                      overlayImg.onload = () => {
+                        ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                          if (!blob) return;
+                          const downloadLink = document.createElement("a");
                           downloadLink.href = URL.createObjectURL(blob);
                           downloadLink.download = `virtual-background-${memberId}.png`;
                           document.body.appendChild(downloadLink);
                           downloadLink.click();
                           document.body.removeChild(downloadLink);
                           URL.revokeObjectURL(downloadLink.href);
+                          showNotification("Background downloaded successfully!", "success");
+                        }, "image/png", 1);
+                      };
+                      overlayImg.src = overlayDataUrl;
+                    };
 
-                          showNotification("Background with overlay downloaded successfully!", "success");
-                        }
-                      }, 'image/png');
-                    } catch (error) {
-                      console.error("Error capturing background:", error);
+                    backgroundImg.onerror = () => {
                       showNotification("Failed to download background", "error");
-                    }
+                    };
+                    backgroundImg.src = backgroundUrl.startsWith("http")
+                      ? backgroundUrl
+                      : `${window.location.origin}${backgroundUrl}`;
+                  } catch (error) {
+                    console.error("Error capturing background:", error);
+                    showNotification("Failed to download background", "error");
                   }
                 }}
               >

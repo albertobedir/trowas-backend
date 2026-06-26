@@ -812,15 +812,6 @@ export function EmailSignatureForm({
                           </Button>
                         </label>
                       </div>
-                      {formState.bannerImage && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => removeImage('bannerImage')}
-                        >
-                          <Trash2 size={14} className="text-red-500" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 )}

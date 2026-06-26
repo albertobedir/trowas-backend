@@ -32,7 +32,20 @@ export function middleware(request: NextRequest) {
   const refresh_token = request.cookies.get("refresh_token")?.value;
 
   if (path === "/" && !acces_token && !refresh_token) {
-    return NextResponse.redirect(new URL("/homepage", request.url));
+    const referer = request.headers.get("referer");
+    let fromMarketing = false;
+
+    if (referer) {
+      try {
+        fromMarketing = isMarketingRoute(new URL(referer).pathname);
+      } catch {
+        fromMarketing = false;
+      }
+    }
+
+    if (!fromMarketing) {
+      return NextResponse.redirect(new URL("/homepage", request.url));
+    }
   }
 
   // If not authenticated and trying to access a protected route, redirect to login

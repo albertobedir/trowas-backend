@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from 'next/image';
 import {
   Dialog,
@@ -40,6 +40,12 @@ export function ManageMembersDialog({
   const [open, setOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<Member[]>(currentMembers);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedMembers(currentMembers);
+    }
+  }, [open, currentMembers]);
 
   const handleMemberToggle = (member: Member) => {
     setSelectedMembers(prev => {

@@ -154,7 +154,7 @@ export default function AdminLeadsPage() {
       <div>
         <h2 className="text-2xl font-bold text-slate-900">Leads</h2>
         <p className="mt-1 text-slate-600">
-          {total} lead record{total !== 1 ? "s" : ""} in the database
+          Veritabanında {total} lead kaydı
         </p>
       </div>
 
@@ -165,13 +165,13 @@ export default function AdminLeadsPage() {
               htmlFor="search"
               className="mb-1.5 block text-xs text-slate-500"
             >
-              Search
+              Ara
             </Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="search"
-                placeholder="Search by name, email, phone, company..."
+                placeholder="İsim, e-posta, telefon veya şirkete göre ara..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -180,13 +180,13 @@ export default function AdminLeadsPage() {
           </div>
 
           <div>
-            <Label className="mb-1.5 block text-xs text-slate-500">Team</Label>
+            <Label className="mb-1.5 block text-xs text-slate-500">Takım</Label>
             <Select value={teamId} onValueChange={setTeamId}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
+                <SelectItem value="all">Tüm Takımlar</SelectItem>
                 {teams.map((team) => (
                   <SelectItem key={team._id} value={team._id}>
                     {team.name}
@@ -212,27 +212,27 @@ export default function AdminLeadsPage() {
                   <SortIcon column="title" />
                 </button>
               </TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead>E-posta</TableHead>
+              <TableHead>Telefon</TableHead>
+              <TableHead>Tür</TableHead>
               <TableHead>
                 <button
                   type="button"
                   onClick={() => toggleSort("userName")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Captured By
+                  Yakalayan
                   <SortIcon column="userName" />
                 </button>
               </TableHead>
-              <TableHead>Team</TableHead>
+              <TableHead>Takım</TableHead>
               <TableHead>
                 <button
                   type="button"
                   onClick={() => toggleSort("createdAt")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Created
+                  Oluşturulma
                   <SortIcon column="createdAt" />
                 </button>
               </TableHead>
@@ -245,7 +245,7 @@ export default function AdminLeadsPage() {
                   colSpan={7}
                   className="h-32 text-center text-slate-500"
                 >
-                  Loading leads...
+                  Lead kayıtları yükleniyor...
                 </TableCell>
               </TableRow>
             ) : leads.length === 0 ? (
@@ -254,7 +254,7 @@ export default function AdminLeadsPage() {
                   colSpan={7}
                   className="h-32 text-center text-slate-500"
                 >
-                  No leads found matching your criteria.
+                  Kriterlere uygun lead bulunamadı.
                 </TableCell>
               </TableRow>
             ) : (

@@ -1,42 +1,42 @@
 {
   "homepage": {
     "contentFile": "homepage.html",
-    "title": "Home 02 - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Home 02 - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "about": {
     "contentFile": "about.html",
-    "title": "About - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "About - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "features": {
     "contentFile": "features.html",
-    "title": "Features 02 - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Features 02 - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "pricing": {
     "contentFile": "pricing.html",
-    "title": "Pricing 02 - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Pricing 02 - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "blog": {
     "contentFile": "blog.html",
-    "title": "Blog - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Blog - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "contact": {
     "contentFile": "contact.html",
-    "title": "Contact - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Contact - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "privacy-policy": {
     "contentFile": "privacy-policy.html",
-    "title": "Privacy Policy - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Privacy Policy - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   },
   "terms-of-conditions": {
     "contentFile": "terms-of-conditions.html",
-    "title": "Terms of Conditions - Rol Card",
-    "description": "Rol Card is a smart SaaS solution to automate your workflow."
+    "title": "Terms of Conditions - RolCard",
+    "description": "RolCard is a smart SaaS solution to automate your workflow."
   }
 }

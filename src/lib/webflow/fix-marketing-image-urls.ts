@@ -35,6 +35,17 @@ export function toPublicAssetUrl(relativePathFromAssetsRoot: string): string {
   return `${WEBFLOW_ASSETS_PREFIX}${parts.join("/")}/${encodedFilename}`;
 }
 
+export function normalizeMarketingBrandingHtml(html: string): string {
+  return html
+    .replace(/\bSincra\b/g, "RolCard")
+    .replace(/\bSinco\b/g, "RolCard")
+    .replace(/\bRol Card\b/g, "RolCard")
+    .replace(/\bTrowas\b/g, "RolCard")
+    .replace(/695982a63e42fad24a9986cb_Sincra\.svg/g, "RolCard.svg")
+    .replace(/695982a63e42fad24a9986cd_Sincra\.svg/g, "RolCard.svg")
+    .replace(/695982a63e42fad24a998574_Sincra\.svg/g, "RolCard.svg");
+}
+
 export function fixMarketingImageUrlsHtml(html: string): string {
   let result = html.replace(
     /src="(\/assets\/cdn\.prod\.website-files\.com\/[^"]+)"/g,

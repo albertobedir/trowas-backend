@@ -116,9 +116,9 @@ export default function AdminTeamsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Teams</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Takımlar</h2>
         <p className="mt-1 text-slate-600">
-          {total} team{total !== 1 ? "s" : ""} in the database
+          Veritabanında {total} takım
         </p>
       </div>
 
@@ -126,13 +126,13 @@ export default function AdminTeamsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:items-end">
           <div>
             <Label htmlFor="search" className="mb-1.5 block text-xs text-slate-500">
-              Search
+              Ara
             </Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="search"
-                placeholder="Search by name, subdomain, or email domain..."
+                placeholder="İsim, alt alan adı veya e-posta alanına göre ara..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -152,30 +152,30 @@ export default function AdminTeamsPage() {
                   onClick={() => toggleSort("name")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Team Name
+                  Takım Adı
                   <SortIcon column="name" />
                 </button>
               </TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Subdomain</TableHead>
+              <TableHead>Sahip</TableHead>
+              <TableHead>Alt Alan Adı</TableHead>
               <TableHead>
                 <button
                   type="button"
                   onClick={() => toggleSort("memberCount")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Members
+                  Üyeler
                   <SortIcon column="memberCount" />
                 </button>
               </TableHead>
-              <TableHead>Sub-teams</TableHead>
+              <TableHead>Alt Takımlar</TableHead>
               <TableHead>
                 <button
                   type="button"
                   onClick={() => toggleSort("createdAt")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Created
+                  Oluşturulma
                   <SortIcon column="createdAt" />
                 </button>
               </TableHead>
@@ -185,13 +185,13 @@ export default function AdminTeamsPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                  Loading teams...
+                  Takımlar yükleniyor...
                 </TableCell>
               </TableRow>
             ) : teams.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                  No teams found matching your criteria.
+                  Kriterlere uygun takım bulunamadı.
                 </TableCell>
               </TableRow>
             ) : (
@@ -229,7 +229,7 @@ export default function AdminTeamsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3">
             <p className="text-sm text-slate-600">
-              Page {page} of {totalPages}
+              Sayfa {page} / {totalPages}
             </p>
             <div className="flex gap-2">
               <Button
@@ -239,7 +239,7 @@ export default function AdminTeamsPage() {
                 onClick={() => setPage((p) => p - 1)}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                Önceki
               </Button>
               <Button
                 variant="outline"
@@ -247,7 +247,7 @@ export default function AdminTeamsPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                Sonraki
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

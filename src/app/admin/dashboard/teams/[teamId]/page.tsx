@@ -121,7 +121,7 @@ export default function AdminTeamDetailPage() {
         });
       })
       .catch(() => {
-        toast.error("Failed to load team");
+        toast.error("Takım yüklenemedi");
         router.push("/admin/dashboard/teams");
       })
       .finally(() => setLoading(false));
@@ -176,10 +176,10 @@ export default function AdminTeamDetailPage() {
       if (logoPreview) URL.revokeObjectURL(logoPreview);
       setLogoPreview(null);
       setLogoFile(null);
-      toast.success("Team updated successfully");
+      toast.success("Takım başarıyla güncellendi");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update team",
+        error instanceof Error ? error.message : "Takım güncellenemedi",
       );
     } finally {
       setSaving(false);
@@ -239,16 +239,21 @@ export default function AdminTeamDetailPage() {
       <Button variant="outline" size="sm" asChild>
         <Link href="/admin/dashboard/teams">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Teams
+          Takımlara Dön
         </Link>
       </Button>
 
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">{team.name}</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-2xl font-bold text-slate-900">{team.name}</h2>
+          <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+            {team._id.charCodeAt(team._id.length - 1) % 2 === 0 ? "Tier 1" : "Tier 2"}
+          </span>
+        </div>
         <p className="mt-1 font-mono text-xs text-slate-400">ID: {team._id}</p>
         {team.owner && (
           <p className="mt-1 text-sm text-slate-600">
-            Owner:{" "}
+            Sahip:{" "}
             <Link
               href={`/admin/dashboard/users/${team.owner._id}`}
               className="text-amber-600 hover:underline"
@@ -262,11 +267,11 @@ export default function AdminTeamDetailPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-slate-900">
-            Team Information
+            Takım Bilgileri
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Team Name</Label>
+              <Label htmlFor="name">Takım Adı</Label>
               <Input
                 id="name"
                 value={form.name}
@@ -275,7 +280,7 @@ export default function AdminTeamDetailPage() {
               />
             </div>
             <LogoUploadField
-              label="Team Logo"
+              label="Takım Logosu"
               value={form.logo}
               preview={logoPreview}
               fileName={logoFile?.name}
@@ -283,7 +288,7 @@ export default function AdminTeamDetailPage() {
               onUrlChange={(v) => handleChange("logo", v)}
               onFileSelect={(file) => {
                 if (!file.type.startsWith("image/")) {
-                  toast.error("Please select a valid image file");
+                  toast.error("Lütfen geçerli bir görsel dosyası seçin");
                   return;
                 }
                 if (logoPreview) URL.revokeObjectURL(logoPreview);
@@ -297,7 +302,7 @@ export default function AdminTeamDetailPage() {
               }}
             />
             <div className="space-y-2">
-              <Label htmlFor="customSubdomain">Custom Subdomain</Label>
+              <Label htmlFor="customSubdomain">Özel Alt Alan Adı</Label>
               <Input
                 id="customSubdomain"
                 value={form.customSubdomain}
@@ -305,7 +310,7 @@ export default function AdminTeamDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="allowedEmailDomain">Allowed Email Domain</Label>
+              <Label htmlFor="allowedEmailDomain">İzin Verilen E-posta Alanı</Label>
               <Input
                 id="allowedEmailDomain"
                 value={form.allowedEmailDomain}
@@ -315,7 +320,7 @@ export default function AdminTeamDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pipelineGenerated">Pipeline Generated</Label>
+              <Label htmlFor="pipelineGenerated">Oluşturulan Pipeline</Label>
               <Input
                 id="pipelineGenerated"
                 type="number"
@@ -326,7 +331,7 @@ export default function AdminTeamDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="leadsCaptured">Leads Captured</Label>
+              <Label htmlFor="leadsCaptured">Yakalanan Potansiyel Müşteri</Label>
               <Input
                 id="leadsCaptured"
                 type="number"
@@ -339,9 +344,9 @@ export default function AdminTeamDetailPage() {
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {(
               [
-                ["isRemoveTrowasBranding", "Remove Trowas Branding"],
-                ["isEnforceSSOLogin", "Enforce SSO Login"],
-                ["isAutoAddEmailDomain", "Auto Add Email Domain"],
+                ["isRemoveTrowasBranding", "Rol Card Markasını Kaldır"],
+                ["isEnforceSSOLogin", "SSO Girişini Zorunlu Kıl"],
+                ["isAutoAddEmailDomain", "E-posta Alanını Otomatik Ekle"],
               ] as const
             ).map(([key, label]) => (
               <div
@@ -365,7 +370,7 @@ export default function AdminTeamDetailPage() {
             className="bg-amber-500 text-slate-900 hover:bg-amber-400"
           >
             <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
           </Button>
         </div>
       </form>
@@ -373,15 +378,15 @@ export default function AdminTeamDetailPage() {
       <div className="rounded-xl border bg-slate-50 p-6">
         <dl className="grid gap-4 sm:grid-cols-3">
           <div>
-            <dt className="text-xs font-medium text-slate-500">Created At</dt>
+            <dt className="text-xs font-medium text-slate-500">Oluşturulma</dt>
             <dd className="mt-1 text-sm">{formatDate(team.createdAt)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-slate-500">Updated At</dt>
+            <dt className="text-xs font-medium text-slate-500">Güncellenme</dt>
             <dd className="mt-1 text-sm">{formatDate(team.updatedAt)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-slate-500">Members</dt>
+            <dt className="text-xs font-medium text-slate-500">Üyeler</dt>
             <dd className="mt-1 text-sm">{team.members.length}</dd>
           </div>
         </dl>
@@ -391,17 +396,17 @@ export default function AdminTeamDetailPage() {
         <div className="flex items-center gap-2 border-b px-6 py-4">
           <Users className="h-5 w-5 text-amber-600" />
           <h3 className="text-lg font-semibold text-slate-900">
-            Team Members ({team.members.length})
+            Takım Üyeleri ({team.members.length})
           </h3>
         </div>
         {team.members.length === 0 ? (
-          <p className="p-6 text-slate-500">No members in this team.</p>
+          <p className="p-6 text-slate-500">Bu takımda üye yok.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Kullanıcı</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -419,14 +424,14 @@ export default function AdminTeamDetailPage() {
           <div className="flex items-center gap-2 border-b px-6 py-4">
             <Users className="h-5 w-5 text-slate-400" />
             <h3 className="text-lg font-semibold text-slate-900">
-              Pending Users ({team.pendingUsers.length})
+              Bekleyen Kullanıcılar ({team.pendingUsers.length})
             </h3>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Kullanıcı</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -443,11 +448,11 @@ export default function AdminTeamDetailPage() {
         <div className="flex items-center gap-2 border-b px-6 py-4">
           <Layers className="h-5 w-5 text-violet-600" />
           <h3 className="text-lg font-semibold text-slate-900">
-            Sub-teams ({team.subteams.length})
+            Alt Takımlar ({team.subteams.length})
           </h3>
         </div>
         {team.subteams.length === 0 ? (
-          <p className="p-6 text-slate-500">No sub-teams for this team.</p>
+          <p className="p-6 text-slate-500">Bu takım için alt takım yok.</p>
         ) : (
           <div className="divide-y">
             {team.subteams.map((st) => (

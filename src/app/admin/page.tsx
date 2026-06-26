@@ -38,12 +38,12 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        throw new Error(data.error || "Giriş başarısız");
       }
 
       router.push("/admin/dashboard");
     } catch {
-      setError("Sign in failed. Please check your root number and password.");
+      setError("Giriş başarısız. Kök numaranızı ve şifrenizi kontrol edin.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
           <div className="flex justify-center">
             <Image
               src="/logo.png"
-              alt="Trowas"
+              alt="Rol Card"
               width={120}
               height={40}
               className="h-8 w-auto"
@@ -68,9 +68,9 @@ export default function AdminLoginPage() {
               }}
             />
           </div>
-          <CardTitle className="text-2xl font-bold">Admin Sign In</CardTitle>
+          <CardTitle className="text-2xl font-bold">Admin Girişi</CardTitle>
           <CardDescription className="text-slate-400">
-            Enter your credentials to access the management portal
+            Yönetim paneline erişmek için bilgilerinizi girin
           </CardDescription>
         </CardHeader>
 
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
 
             <div className="space-y-2">
               <label htmlFor="rootNumber" className="text-sm text-slate-300">
-                Root Number
+                Kök Numara
               </label>
               <Input
                 id="rootNumber"
@@ -100,7 +100,7 @@ export default function AdminLoginPage() {
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm text-slate-300">
-                Password
+                Şifre
               </label>
               <div className="relative">
                 <Input
@@ -134,11 +134,11 @@ export default function AdminLoginPage() {
               disabled={loading}
             >
               {loading ? (
-                "Signing in..."
+                "Giriş yapılıyor..."
               ) : (
                 <>
                   <Lock className="mr-2 h-4 w-4" />
-                  Sign In
+                  Giriş Yap
                 </>
               )}
             </Button>

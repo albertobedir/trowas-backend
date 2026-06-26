@@ -141,9 +141,9 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Users</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Kullanıcılar</h2>
         <p className="mt-1 text-slate-600">
-          {total} user{total !== 1 ? "s" : ""} in the database
+          Veritabanında {total} kullanıcı
         </p>
       </div>
 
@@ -151,13 +151,13 @@ export default function AdminUsersPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <div className="lg:col-span-2">
             <Label htmlFor="search" className="mb-1.5 block text-xs text-slate-500">
-              Search
+              Ara
             </Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="search"
-                placeholder="Search by name, email, or username..."
+                placeholder="İsim, e-posta veya kullanıcı adına göre ara..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -167,31 +167,31 @@ export default function AdminUsersPage() {
 
           <div>
             <Label className="mb-1.5 block text-xs text-slate-500">
-              Account Type
+              Hesap Türü
             </Label>
             <Select value={accountType} onValueChange={setAccountType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="individual">Individual</SelectItem>
-                <SelectItem value="corporate">Corporate</SelectItem>
+                <SelectItem value="all">Tüm Türler</SelectItem>
+                <SelectItem value="individual">Bireysel</SelectItem>
+                <SelectItem value="corporate">Kurumsal</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label className="mb-1.5 block text-xs text-slate-500">
-              User Role
+              Kullanıcı Rolü
             </Label>
             <Select value={userRole} onValueChange={setUserRole}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="all">Tüm Roller</SelectItem>
+                <SelectItem value="user">Kullanıcı</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -199,16 +199,16 @@ export default function AdminUsersPage() {
 
           <div>
             <Label className="mb-1.5 block text-xs text-slate-500">
-              VIP Status
+              VIP Durumu
             </Label>
             <Select value={isVipMember} onValueChange={setIsVipMember}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="true">VIP Only</SelectItem>
-                <SelectItem value="false">Non-VIP</SelectItem>
+                <SelectItem value="all">Tümü</SelectItem>
+                <SelectItem value="true">Sadece VIP</SelectItem>
+                <SelectItem value="false">VIP Olmayan</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -226,7 +226,7 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort("name")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Name
+                  İsim
                   <SortIcon column="name" />
                 </button>
               </TableHead>
@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort("email")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Email
+                  E-posta
                   <SortIcon column="email" />
                 </button>
               </TableHead>
@@ -246,7 +246,7 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort("username")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Username
+                  Kullanıcı Adı
                   <SortIcon column="username" />
                 </button>
               </TableHead>
@@ -256,11 +256,11 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort("accountType")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Type
+                  Tür
                   <SortIcon column="accountType" />
                 </button>
               </TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Rol</TableHead>
               <TableHead>VIP</TableHead>
               <TableHead>
                 <button
@@ -268,7 +268,7 @@ export default function AdminUsersPage() {
                   onClick={() => toggleSort("createdAt")}
                   className="flex items-center font-medium hover:text-slate-900"
                 >
-                  Joined
+                  Katılım
                   <SortIcon column="createdAt" />
                 </button>
               </TableHead>
@@ -278,13 +278,13 @@ export default function AdminUsersPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-32 text-center text-slate-500">
-                  Loading users...
+                  Kullanıcılar yükleniyor...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-32 text-center text-slate-500">
-                  No users found matching your criteria.
+                  Kriterlere uygun kullanıcı bulunamadı.
                 </TableCell>
               </TableRow>
             ) : (

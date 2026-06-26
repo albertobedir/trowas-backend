@@ -547,13 +547,13 @@ function MembersContent() {
     setSelectedSort(null);
     setSortConfig({ key: "", direction: "" });
   };
-  const [zort, setZort] = useState({
-    _id: "12345",
-    teamId: "12345",
-    name: "Yilmaz",
-    role: false,
-    image: "/path/to/image.jpg",
-  });
+  const [adminRoleUser, setAdminRoleUser] = useState<{
+    _id: string;
+    teamId: string;
+    name: string;
+    role: boolean;
+    image?: string;
+  } | null>(null);
   const [showhandleedit, setshowHandleEdit] = useState(false);
   const handleEditAdminStatus = (
     itemId: string,
@@ -566,24 +566,13 @@ function MembersContent() {
       return;
     }
 
-    if (itemrole === "member") {
-      setZort({
-        _id: itemId,
-        name: itemusername,
-        teamId: user.team,
-        role: false,
-        image: itemprofileimage,
-      });
-    }
-    if (itemrole === "manager") {
-      setZort({
-        _id: itemId,
-        name: itemusername,
-        teamId: user.team,
-        role: true,
-        image: itemprofileimage,
-      });
-    }
+    setAdminRoleUser({
+      _id: itemId,
+      name: itemusername,
+      teamId: user.team,
+      role: itemrole === "manager",
+      image: itemprofileimage,
+    });
     setshowHandleEdit(true);
   };
   const applySort = () => {
@@ -1149,16 +1138,11 @@ function MembersContent() {
                                           alt={item.name}
                                         />
                                         <div className="min-w-0 flex-1">
-                                          <div className="flex min-w-0 items-center gap-2">
-                                            <div
-                                              className="min-w-0 flex-1 truncate font-medium text-base"
-                                              title={item.name}
-                                            >
-                                              {item.name}
-                                            </div>
-                                            <div className="shrink-0 whitespace-nowrap rounded-full bg-[rgb(242,242,242)] px-3 py-1 text-[10px] font-semibold text-[#828282]">
-                                              {item.roles.teamRole.toUpperCase()}
-                                            </div>
+                                          <div
+                                            className="min-w-0 truncate font-medium text-base"
+                                            title={item.name}
+                                          >
+                                            {item.name}
                                           </div>
                                           <span
                                             className="mt-1 block truncate text-sm text-muted-foreground"
@@ -1166,6 +1150,9 @@ function MembersContent() {
                                           >
                                             {item.username}
                                           </span>
+                                        </div>
+                                        <div className="shrink-0 self-center whitespace-nowrap rounded-full bg-[rgb(242,242,242)] px-3 py-1 text-[10px] font-semibold text-[#828282]">
+                                          {item.roles.teamRole.toUpperCase()}
                                         </div>
                                       </div>
                                       {user?.roles?.teamRole === "owner" && (
@@ -1180,14 +1167,16 @@ function MembersContent() {
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end">
                                             <DropdownMenuItem
-                                              onClick={() =>
-                                                handleEditAdminStatus(
-                                                  item._id,
-                                                  item.name,
-                                                  item.profileImage,
-                                                  item.roles.teamRole,
-                                                )
-                                              }
+                                              onSelect={() => {
+                                                window.setTimeout(() => {
+                                                  handleEditAdminStatus(
+                                                    item._id,
+                                                    item.name,
+                                                    item.profileImage,
+                                                    item.roles.teamRole,
+                                                  );
+                                                }, 0);
+                                              }}
                                             >
                                               Edit Admin Status
                                             </DropdownMenuItem>
@@ -1930,11 +1919,18 @@ function MembersContent() {
           }
         }}
       />
-      <AdminRolesDialog
-        isOpen={showhandleedit}
-        onClose={() => setshowHandleEdit(false)}
-        user={zort}
-      />
+      {adminRoleUser && showhandleedit && (
+        <AdminRolesDialog
+          key={adminRoleUser._id}
+          isOpen={showhandleedit}
+          onClose={() => {
+            setshowHandleEdit(false);
+            setAdminRoleUser(null);
+            fetchMembers();
+          }}
+          user={adminRoleUser}
+        />
+      )}
     </div>
   );
 }

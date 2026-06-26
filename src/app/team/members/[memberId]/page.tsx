@@ -160,24 +160,30 @@ const MemberDetailPage = () => {
     }
   }, [data?.data?.userCard?.emailData]);
   const [emailSignatureData, setEmailSignatureData] = useState<any>(null);
+  const memberEmailSignatureId = data?.data?.emailSignature
+    ? String(data.data.emailSignature)
+    : null;
 
   useEffect(() => {
     const fetchEmailSignature = async () => {
+      if (!memberEmailSignatureId) {
+        setEmailSignatureData(null);
+        return;
+      }
+
       try {
         const response = await Api.get(
-          `/email-signature/${user?.emailSignature}`,
+          `/email-signature/${memberEmailSignatureId}`,
         );
-        console.log("Email Signature Data:", response.data);
         setEmailSignatureData(response.data);
       } catch (error) {
         console.error("Error fetching email signature:", error);
+        setEmailSignatureData(null);
       }
     };
 
-    if (user?.emailSignature) {
-      fetchEmailSignature();
-    }
-  }, [user?.emailSignature]);
+    fetchEmailSignature();
+  }, [memberEmailSignatureId]);
 
   // Define a default member object that will be replaced with API data when it loads
   const defaultMember = {
@@ -1003,12 +1009,6 @@ const MemberDetailPage = () => {
       value: "email-signature",
       icon: MailIcon,
       description: "Customizable email signatures",
-    },
-    {
-      name: "Accessories",
-      value: "accessories",
-      icon: Package,
-      description: "Member tools and accessories",
     },
   ];
   const renderContent = () => {
@@ -2700,10 +2700,10 @@ const MemberDetailPage = () => {
           );
         }
 
-      case "email-signature":
-        // Mock data for email signature preview
+      case "email-signature": {
+        const signature = emailSignatureData?.signature;
         const mockSignatureData =
-          user?.emailSignature?.length > 0
+          memberEmailSignatureId && signature
             ? {
                 name: data?.data.userCard?.name,
                 jobTitle: data?.data.userCard?.jobTitle,
@@ -2714,21 +2714,19 @@ const MemberDetailPage = () => {
                 pronouns: "he/him",
                 profilePic: data?.data.userCard?.profilePicture,
                 companyLogo: data?.data.userCard?.companyLogo,
-                bannerImage: emailSignatureData.signature.images.banner,
-                disclaimer: emailSignatureData.signature.disclaimer,
-                showName: emailSignatureData.signature.information.name,
-                showPronouns: emailSignatureData.signature.information.pronouns,
-                showJobTitle: emailSignatureData.signature.information.jobtitle,
-                showCompanyName:
-                  emailSignatureData.signature.information.companyname,
-                showLocation: emailSignatureData.signature.information.location,
-                showEmail: emailSignatureData.showEmail,
-                showPhoneNumber: emailSignatureData.showPhoneNumber,
-                showProfilePic: emailSignatureData.signature.images.profilepic,
-                showCompanyLogo:
-                  emailSignatureData.signature.images.companylogo,
-                showQRCode: emailSignatureData.signature.images.qrcode,
-                showBanner: emailSignatureData.signature.images.showbanner,
+                bannerImage: signature.images.banner,
+                disclaimer: signature.disclaimer,
+                showName: signature.information.name,
+                showPronouns: signature.information.pronouns,
+                showJobTitle: signature.information.jobtitle,
+                showCompanyName: signature.information.companyname,
+                showLocation: signature.information.location,
+                showEmail: signature.information.email,
+                showPhoneNumber: signature.information.phoneNumber,
+                showProfilePic: signature.images.profilepic,
+                showCompanyLogo: signature.images.companylogo,
+                showQRCode: signature.images.qrcode,
+                showBanner: signature.images.showBanner,
               }
             : {
                 name: data?.data.userCard?.name,
@@ -2933,42 +2931,7 @@ const MemberDetailPage = () => {
             </div>
           </>
         );
-
-        return (
-          <div className="flex flex-col items-center h-full">
-            <div className="w-full flex flex-col md:flex-row mt-4 gap-8">
-              {/* Left content - QR Code and instructions */}
-              <div className="w-full bg-red- rounded-lg p-6 flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-6">
-                  Activate Accessories
-                </h2>
-
-                <div className="mb-8">
-                  <div className="w-[200px] h-[200px] mx-auto">
-                    <img
-                      src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAAAXNSR0IArs4c6QAAELJJREFUeF7tnVuS2zoMBZOpe/8b+K/GVSOPT0TLlADJao5kSUA7gNsypeRm/vzx4////PnzEO/Pnz/L//fn/wjq39v3v/3+Y+O7X+e5O4e+v/tMfak8eCz626849vdf+u3X/FfH6/sLgeeGVcWXnzHief7B7X++wPARJMIETAiELILKdRx5n+WyEJKZuAQEkAyCXMcIILkE+XiLtUKQaNadALI+n11/QLimoZovVSYAGUAYQRj+lSufaL7KaSmADCDM4EcHZElrcyWvnPF0BeS7Dye/D9X8Ws1ldH0BiD5KqufZu3P0/qsA6fKhZ5dIGAniHAGIE9gopo1XQQKIIzlcTCuumAGQQKS9QIQ0fc3XTnMAF4uG/0D+17sOPkkXUUZ5qvbfDjnm+F3U8OnDLB2L+voq5BZ7sQCQo3GGJD54kucAYjI1ZgKIOfRPAQnOUcdl2PS3H+2Yl5eXZT5VWFX3AU4a+2iZdLlNH2IJIIDEM6EMQWs9MEo8gKwCDiDUvg0QXBD1AikI6uFJj6G3Xtb9qhyXL5DKCmshkf1XAUG/qOo9Dt8u111hL57PqEu161m+OVUPxyPzpTmmD7EA8kuA0UHeASQSJ0UbQKLADroABJBFgGxBVTCEVNXdIudDrbKlv96OreRbMS/6/i6qD9e7uv3o8epw3wtIdI3pd+JV10Fg7IjqhU9/ACJEni8TIMTG+Bgg6iLNFomLBQaU51t1YcbZ78szRQ2AZOF/KLbLHrv9cuiit+idKsCbZoAEkEXNuk7EXRwAZDdbAPn6oqZG3PXD3ZwX5+uqRE6bguu+pl+tl+7grM5nBamKs3qBdOeq4qxeoFVgZ+0X7nM1v2jnF0DI7gOIUGw3RxdALtedBhDxnVpVxe0k7aTou0RHj6fXqHpBdZlr9QKrgAZEat+4maovEFpUXxTxqt5Vqc/boao3QNZDmQ4IJRsgZ62T/j5AyHeEAQQgywIs9yLViGiBdCFZ1H4VsnpB6EWgVZ6eu4q5OnM8Otu1l+huf7rPqodiRtcXQCSCAaS9BwEkakR6OEDWNdMdmOmfpHf3IE8FpLoRsjtIzXV+UFxRHLZbpjuy3YR3V+jV/mqel6+o6S8UH5WzejvsGol010B1v5ujrqB2Od4O0Xqnf1DYpSh3x6HaT39Q2AWQq8u3+lBplFuVZpd8aTnur9muPS6cEw9xbB/ClnOj7lKXef0FyG6QXeIyTUiXuHagiXHrEKddDB3m1CUOQM67VoBEAteu+LuLTvv7ezNll4D3pVPPvnK06LzUpe7y7KoLICB/3eZSy8VN1l4geq9Rdc3uyJnmYS/HdEDubzIVRe3FpB87FGnXC7Iak9oeHeb243Yd2revfVXzpbp363nVXi3mS/Ogc+4OTJf9QguELsSokNQimV7c6s5dB6SyX9AYqheqOM/eGH3Ag7poV8kdfUemOs9ssQDyl3hVIHYB1D0O+6Wox1SdK0D2qgWQD2TvXxQdJbj7/V1EoddU46A6X7VfcbApklvoRYPvx9Edlerxu3bovVT1HnRHsmuP0n6qi0UBofcG1IDdYnQpNkCiQrMvpgJIj3IHSFO2cHGuLuwqztXeiIp2u9aO5wSQ6khkrKa7WABZl0dXQJ6/A1dxAsjOeE0H5P5Ws6r9hsq36wXpkscOSHSs9A9z+sSmw/7ei6r7AJIkpCrwCsXtdpAqPrvq1M0AOTdDqi7SXQeNJXqRqm7T1YOr4lRlWd2v6jH0YpY+xOqOSlS0uy+Ku/ZC9iAV/L4zFkDIt2JVFoQGY/u5ij6ArE+mAuQj7PPeue/SWguE2FztZunHRl13AJLBs3r8dkagqwGN8+OFuTyTfLWguneigHS5WO7eI9qDVLlYFQkFyPnOAAiZLUTiAOQcj13kX/W+7m78Xfr+B0DAWRepCnH1nNRlqVpUu3y7HqLKDp0LQBw9aBXnbr/deLXF+v+5b7EUAh/1p7SnffcR6nuoqBfrEk+Vsf+iW7Sn6hbL5YJRQKKLIIocASQqWHucd2/nqS4AwrlnNfdJkOlvsai4VeYbFVG1KdR8VfNV81XzVfWgHjQd6Lp9qrrdYlV9ONwhxB3iosRF4wCQyAcazQCQ811ZAFm1Ad9iFTUDIGvBqglftXRTO9S8lTJVc1bNX9X+0v6KbreKzbrD/dGouoN0fcHcPxe18F2+xXLGyAppfdwGiE/IFStAAKnQavcYAwhlzc8KEEAok34+Aoh/D1J10UGJTOK6PssCSNXKF+a6C0xdEwAJCrZrEYvW5htdopuvNE5qH/UI+h16tPc6fdpq9Q5AM/UhFh30APLBgC9fUqzqse1PAfKoHztU7Tei/alQdCHqbqGmf0uxKzDVIlHiAuPoAHW5Q+oODH2ucQEQQC4VAwUDIHZAAHKRZ/YeZPeveDxqIY+eHdAdkY9BSe4h6LmrF7hq/L0AFbtRIQB52IPs+hN3in7VLpnuTtBbP4CsqXV1gdWOQQFZPnYH5PmpfncdVPtEIVbuK6ieXS/M6nloXKoXs7sOdH9dQVvdmuq+MAYQFQ9AvgUfQFaF6TJPPdiue5AuF+tRF6ti31WnLu2LzrVqz3Q/x67WAQQgyw0CfcQLIFEl+uMASMPHvNULCiDnTQo9Wl3oAPJ7j9O6bk9rsQCiuQ8QTb+HvQDywSA6xOr+gNs6To1BBSK9H+GFv74xxEWn9imuFn2eSe/53P9WtoE2PNGPs1U/L9XlQVj6EKt6EahLUy3CLm5dtBexTd8j3O+3KOU0rv0/qm6353r5X01C3aUuoFPbAHnwyVZ0QVA/ALKoZNcDp/o8KmSAZMABCCBO/W7aAJKBNsEGSBJcwRwgiwhdk6tLkapDnBsj4jlDJDpvHTcaB/TO1WPpPiN9CXUL7nJB77YB5CKpqtx2cQvHk01yl/Oos7fTfvRcrB33dL0B0mTdslhcDw0cqptDekFQPajroq6H65y0LrQc9/bpQrYAYv+j6AASLWRrvE+E5BP3+BpJBwoghWwBBCDL9xUAIQWuqKUwkXQRZQBx7oj2GyjnuamNem/UBdzi81g3qlssFXk63/RnkPfOoUq2imjVmoBcZ0C+RyE3gAPk/Fuf6Yrx5SOAbOJEi6sSEUDWd1RUCwCpJHB/nOsZsGKEiijoQywKCG2xug7xqPiuB151/K6C+/JFK3d0QbrAmLqIAMhfsVfHqRc4nSMXLVpH/5w+xAJIaj6nGQDIOY+uL6UBknaKZQQgOQVmdcdxnbyLfbQhmj7EovmOnr8ryaK53OKgDpq7n+mjXff8TJ3rqvEqHjQPerHQ+qInAS+/sVbFqWtDZAfEdUOui3TVjhbXvbiV+4dKgVRxMzxQlX6XfXb3qeuuXTcL0y/s6NycogAIucWiRfIxjAKEFpkrbt+CdcHrKvLKfrsA0vUMlD5jXrUl+fbhog8sMq75K79QYwVjhyUApi+Qryrt/7XrDk31UO+6UPt01bcCImqHDnNa5Ln2qpddVx0UwQCJDnFyOO76cs2vASRJpGKlGgcg60IEyIfAPITVEQQg5/25eurU5NeyVeNyxRHtDY7zUU26HhRGzzMoYgfRRQmkirkK4S28XURVxK2eM9Kje5HsL4Z0wDv2VfjyFUB2rw9A7B94UBLTBQiQXcm3zwWIswP8lwEQgjMtJoCsaafekgHkgYuV9VPdQdQFl/Wl49Cx7zrzfnZYdbz1232ivcv9PkB9+Md1HLrFojI8bSC+vKgSDxD6dcHUQYteRABpAs5dFF2E7wvyMXEqEFf79Nz0OrsMtOvl3nX+asMFkEsfYlGRo8JUu1iu4qteoI84aBzVi8l10ey9QLVOWRdYjQkgyUgBkHMhqoGouEa2nQsrGxcgxYMA5PwFRsU1ku3srBTbALGIQbWOHa2GWiAVF6vLWFQPxbyopfLl/DLPO8z0fFV7tXN9+l5sOpB0j7QHv9IKIEcxu7gFALluTtbXBYDIHzXWh/m+UwAhF0N8iOezegoJEACpVuzorAAxS/qoeIt8AIgJxmrbZfZsLZl40jWSP+OAAAQgyx8XoJu2lJ8bY+rBVStDt1+EdmtxjgGI6WI9LdDl23Sz7Xt3giYmCoz9GXWGUr+d5wrx5fETAgQQmh5ArxhQiwIgQr+8bwEgqwQoun4XaTUOgOwZRL/FAgg/EYAsCwEgtKpxsSjgVOTqRRcFgx5OFTvdHqrH02PU+3V3oOmfo6gLDiBnVfiYbnUBBBdCMpWaAgQgz/ygE5prXB0HIMtXKgPyzUrXqLMNzaqLpfp5FgCA/L4fqe5BXPPNtgNSfRZGF6LrYnDdzKoKuDxH9ZzZQu7+Ix/0eHrM9DjT90hqIFWA0FuRyrPUfHRJevrxriKm86m2qf2uc9PjdE0DSDqJ6ti32276MwggxMUyzChAbumQcaWaAAiRmZJ+ZW9nDiBkIrv2qrfodMek61tvgBD0HnXnXAXj+k8RVvFTIe+ew/V80X6q9u3mQteocpwBJHFBASQ4IJAXKOUhQP4peR8Bcrfzuj4Dc8WkAkI/xKKddFWL7AIHyDkR1HVx2aO3k/RzzOgCdZ2zstdv3+vI+9A4xIU4fQYpz3TXG+7fjF595ue62aj2e66L/BBLvR+o7lCr5wDIOTNUBFccAPJ7GBVUC0Dil04sbaVesrrBec5D92nu/4q6y3x1PnvdAQLIb9UAkotLPl3OzVPZTn+xl0KKKrK94wCkAJehXGkCIOcCVuMA5Pxrkt7NAkgOFyqyKzF0TxTZKw+sqwekF489qG4J6X2Feo43ENTFVOOgQFNNMwGh+6hVFVbJHSBrJFXZySZv+UjXJW91nj9sCEDIHgRAABLLGhXNXychQBZfVVTtADl/FkgvUjUPG2suZapuHK7bR/2OiPdZAeTDE/oeRH0IoJLdi0ldZ7gpJ+TqDm/37NVjlDyoIvQFVYmls3a6C+r6P5LRC0Cx714M1F518077olpQXbs+flLjAiQ6XFU7VJfI3bzoBeKLgwJf3UMBeFSo0c/XNo7TATndnKtwORG2hQ4QntgKQKIc0c+pGBRxqBGAuBWhF6nJ5gIE3mJlBJjetVMBmT59wfdVsQYIQMhzxdeBd7EBBCDkWpPshxcvQN4BSKZjt60ASY3NSzmAFL7FSUnaRQaAxRly54YzAiLXOMCOdwwcQCRvbXN3CTz1GIDQ4h7fT/sylrhdk/AdpwEIQE4U2fUAkHVhdrVwU38GeDtgNZb6Mmj320RaJKqdYnVzPpWCDUC6WMTKGmk3kEq8XQAB5O+HpJRoeu9FdQYI+Rari4WreneJdYmBviQpj1AfCKgvSdrcHYzmP/0WyyXwSBuABKI1OQSQ63sT9SbFNed0QF5eXhb+HN/WFwhVAu+CVVwPF8H03ALIrwMIkPOXOHSB3vfTutAGBSCJkgMIQNS/DK7uzaltui5OXROpfOkiG0CiwFUdu94Hlzfo4LxVryy6/HdagNUeDkUsn4PMoLxrIQNkVqr/xgkgl/31u9Rbb7EApK6AXe40ACQ3R8VDqNFH6l0WYnecXS5K9xx0PuntLkDI7gdAsiX8cXyXvZfiYqlDTU2WPvn4uEKrrbyAqrhXJcDvEwCSU7cLHoeI111/99GyPLoA0qXou/Kl9ncDxKVHlQ7cc4/+3wsBs7RXON6lSJWdrlQChIpYpx8FBCDJYqVLSCd+l+6AJBPaYJ7+IJJ+iNWgPqdDAaQBbQOjtIFQAbEJmWzT5dZRTff7rri6XCzqMk6Pn37U9D7kjNTXZh58ikVF7QJSl2vdZb4OO131nlbcXS5KV3Jf/g+zIu4dGmqr+wAAAABJRU5ErkJggg=="
-                      alt="QR Code"
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-700 mb-6">
-                    Scan the QR Code with your phone to launch the activation
-                    flow
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    Use your app to activate accessories.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+      }
 
       case "links":
         return (
@@ -3965,42 +3928,6 @@ const MemberDetailPage = () => {
           </div>
         );
 
-      case "accessories":
-        return (
-          <div className="flex flex-col items-center h-full">
-            <div className="w-full flex flex-col md:flex-row mt-4 gap-8">
-              {/* Left content - QR Code and instructions */}
-              <div className="w-full bg-red- rounded-lg p-6 flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-6">
-                  Activate Accessories
-                </h2>
-
-                <div className="mb-8">
-                  <div className="w-[200px] h-[200px] mx-auto">
-                    <img
-                      src="data:image/png;base64,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"
-                      alt="QR Code"
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-700 mb-6">
-                    Scan the QR Code with your phone to launch the activation
-                    flow
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    Use your app to activate accessories.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
       case "lead-capture-form":
         return (
           <LeadCaptureViewCard
@@ -5746,14 +5673,15 @@ const MemberDetailPage = () => {
                 Virtual background preview
               </p>
             </div>
-            <div className="w-full mt-4 rounded-xl overflow-hidden shadow-sm relative virtual-background-preview">
-              <div className="relative">
+            <div className="w-full mt-4 rounded-xl overflow-hidden shadow-sm relative virtual-background-preview" style={{ maxWidth: "960px", aspectRatio: "16/9" }}>
+              <div className="relative w-full h-full">
                 <Image
                   src={selectedVirtualBackground || `/virtualBackground/1.jpeg`}
                   alt="Selected virtual background preview"
-                  className="w-full object-cover aspect-[16/9]"
-                  width={360}
-                  height={640}
+                  className="w-full h-full object-cover"
+                  fill
+                  sizes="960px"
+                  priority
                 />
 
                 {/* Member info overlay at top left */}
@@ -6495,7 +6423,6 @@ const MemberDetailPage = () => {
                                 "qr-code",
                                 "virtual-background",
                                 "email-signature",
-                                "accessories",
                               ].includes(item.value) &&
                               (item.value !== "virtual-background" ||
                                 !hasPermission(
