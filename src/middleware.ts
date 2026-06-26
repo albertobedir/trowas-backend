@@ -25,10 +25,16 @@ export function middleware(request: NextRequest) {
     path === "/auth/login" ||
     path === "/auth/register" ||
     isMarketingRoute(path) ||
-    path.includes("/connect/");
+    path.includes("/connect/") ||
+    path.startsWith("/uploads/");
   // Check for authentication token
   const acces_token = request.cookies.get("access_token")?.value;
   const refresh_token = request.cookies.get("refresh_token")?.value;
+
+  if (path === "/" && !acces_token && !refresh_token) {
+    return NextResponse.redirect(new URL("/homepage", request.url));
+  }
+
   // If not authenticated and trying to access a protected route, redirect to login
 
   if (!isPublicPath && !acces_token) {
@@ -55,5 +61,5 @@ export const config = {
   // - API routes
   // - Static files (/favicon.ico, /_next/*)
   // - Public assets (/images/*)
-  matcher: ["/((?!api|_next/static|_next/image|images|favicon.ico|assets).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|images|favicon.ico|assets|uploads).*)"],
 };

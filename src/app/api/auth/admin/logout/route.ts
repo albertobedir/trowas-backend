@@ -1,22 +1,12 @@
 "use server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { clearCookie } from "@/utils/cookies";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const response = NextResponse.json({ success: true }, { status: 200 });
 
-  response.cookies.set("admin_access_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 0,
-  });
-
-  response.cookies.set("admin_refresh_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 0,
-  });
+  clearCookie(response, "admin_access_token", req);
+  clearCookie(response, "admin_refresh_token", req);
 
   return response;
 }

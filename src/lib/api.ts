@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from "axios";
 
 export const Api = axios.create({
   withCredentials: true,
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL?.trim() || "/api",
   headers: {
     "Content-Type": "application/json",
   },

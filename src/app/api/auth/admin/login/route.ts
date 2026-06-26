@@ -34,12 +34,13 @@ export async function POST(req: Request) {
       { status: 200 },
     );
 
-    setCookie(response, "admin_access_token", admin_access_token, 8 * 60 * 60);
+    setCookie(response, "admin_access_token", admin_access_token, 8 * 60 * 60, req);
     setCookie(
       response,
       "admin_refresh_token",
       admin_refresh_token,
       7 * 24 * 60 * 60,
+      req,
     );
 
     return response;

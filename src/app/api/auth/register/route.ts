@@ -144,8 +144,8 @@ You both just connected via RollCard and this is an automatic email intro.
     const response = NextResponse.json(responseBody, { status: 201 });
 
     // Cookie'leri ayarla
-    setCookie(response, "access_token", access_token, 15 * 60);
-    setCookie(response, "refresh_token", refresh_token, 7 * 24 * 60 * 60);
+    setCookie(response, "access_token", access_token, 15 * 60, req);
+    setCookie(response, "refresh_token", refresh_token, 7 * 24 * 60 * 60, req);
 
     return response;
   } catch (error) {

@@ -980,7 +980,7 @@ ${phoneNumber ? `TEL;TYPE=CELL:${phoneNumber}\n` : ''}${email ? `EMAIL:${email}\
         )}
 
         {/* Profile section - with different alignment based on layout */}
-        <div className={`flex flex-col ${cardLayout === "Left Aligned" ? "items-start" : "items-center"} ${cardLayout === "Portrait" ? "" : "-mt-20"} px-6 relative`}>
+        <div className={`flex flex-col ${cardLayout === "Left Aligned" ? "items-start" : "items-center"} ${cardLayout === "Portrait" ? "" : "-mt-20"} px-4 sm:px-6 relative`}>
           {/* Profile picture - only for non-portrait layouts */}
           {cardLayout !== "Portrait" && (
             <motion.div
@@ -1030,7 +1030,7 @@ ${phoneNumber ? `TEL;TYPE=CELL:${phoneNumber}\n` : ''}${email ? `EMAIL:${email}\
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className={`${cardLayout === "Left Aligned" ? "text-left" : cardLayout === "Portrait" ? "text-left" : "text-center"} ${cardLayout === "Portrait" ? "px-5" : "mt-4"} mb-6 w-full`}
+            className={`${cardLayout === "Left Aligned" ? "text-left" : cardLayout === "Portrait" ? "text-left" : "text-center"} ${cardLayout === "Portrait" ? "px-4 sm:px-5" : "mt-4"} mb-5 sm:mb-6 w-full`}
           >
             {cardLayout === "Portrait" ? (
               // Portrait layout styling
@@ -1083,55 +1083,55 @@ ${phoneNumber ? `TEL;TYPE=CELL:${phoneNumber}\n` : ''}${email ? `EMAIL:${email}\
               </>
             )}
           </motion.div>
-          {/* Save contact buttons */}
+          {/* Quick actions — mobile-first layout */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className={`w-full flex gap-2 ${cardLayout === "Portrait" ? "px-5" : ""} mb-6`}
+            className={`w-full ${cardLayout === "Portrait" ? "px-5" : ""} mb-6`}
           >
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
-              className={`w-full ${cardLayout === "Portrait" ? "py-3" : "py-3"} rounded-lg text-center flex flex-col gap-1 justify-center items-center text-white font-medium`}
-              style={{ backgroundColor: linkColor }}
-              onClick={() => {
-                if (card?.call) {
-                  window.location.href = `tel:${card?.call}`;
-                }
-              }}
-            >
-              <MdCall className="text-lg" />
-              Call
-            </motion.button>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                className="col-span-2 sm:col-span-1 flex flex-row sm:flex-col items-center justify-center gap-3 sm:gap-1.5 rounded-2xl px-5 py-4 sm:py-3.5 text-white font-semibold text-base sm:text-sm min-h-[56px] shadow-sm"
+                style={{ backgroundColor: linkColor }}
+                onClick={saveContact}
+              >
+                <MdSave className="text-2xl sm:text-lg shrink-0" />
+                <span className="text-center leading-tight">Save Contact</span>
+              </motion.button>
 
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                className="flex flex-row sm:flex-col items-center justify-center gap-2.5 sm:gap-1.5 rounded-2xl px-4 py-4 sm:py-3.5 text-white font-semibold text-base sm:text-sm min-h-[56px] shadow-sm"
+                style={{ backgroundColor: linkColor }}
+                onClick={() => {
+                  if (card?.call) {
+                    window.location.href = `tel:${card?.call}`;
+                  }
+                }}
+              >
+                <MdCall className="text-2xl sm:text-lg shrink-0" />
+                <span>Call</span>
+              </motion.button>
 
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
-              className={`w-full ${cardLayout === "Portrait" ? "py-3" : "py-3"} rounded-lg text-center flex flex-col gap-1 justify-center items-center text-white font-medium`}
-              style={{ backgroundColor: linkColor }}
-              onClick={saveContact}
-            >
-              <MdSave className="text-lg" />
-              Save Contact
-            </motion.button>
-
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
-              className={`w-full ${cardLayout === "Portrait" ? "py-3" : "py-3"} rounded-lg text-center flex flex-col gap-1 justify-center items-center text-white font-medium`}
-              style={{ backgroundColor: linkColor }}
-              onClick={() => {
-                if (card?.email) {
-                  window.location.href = `mailto:${card?.email}`;
-                }
-              }}
-            >
-              <MdEmail className="text-lg" />
-              Email
-            </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                className="flex flex-row sm:flex-col items-center justify-center gap-2.5 sm:gap-1.5 rounded-2xl px-4 py-4 sm:py-3.5 text-white font-semibold text-base sm:text-sm min-h-[56px] shadow-sm"
+                style={{ backgroundColor: linkColor }}
+                onClick={() => {
+                  if (card?.email) {
+                    window.location.href = `mailto:${card?.email}`;
+                  }
+                }}
+              >
+                <MdEmail className="text-2xl sm:text-lg shrink-0" />
+                <span>Email</span>
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Links section - with different styling based on layout */}
