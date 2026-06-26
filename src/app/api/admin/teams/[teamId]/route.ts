@@ -7,6 +7,7 @@ import User from "@/schemas/mongoose/User";
 import SubTeam from "@/schemas/mongoose/SubTeam";
 import dbConnect from "@/lib/db";
 import { requireAdmin } from "@/lib/admin/require-admin";
+import { AdminTeamDetailLean } from "@/lib/admin/mongoose-lean-types";
 import { AdminTeamUpdateSchema } from "@/schemas/zod/admin/team";
 import { saveFile } from "@/utils/upload";
 
@@ -38,7 +39,7 @@ export async function GET(req: Request, { params }: RouteContext) {
 
     const team = await Team.findById(teamId)
       .populate("owner", "name email profileImage username")
-      .lean();
+      .lean<AdminTeamDetailLean>();
 
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
@@ -221,7 +222,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       { new: true },
     )
       .populate("owner", "name email profileImage username")
-      .lean();
+      .lean<AdminTeamDetailLean>();
 
     const [members, pendingUsers, subteams] = await Promise.all([
       User.find({ team: teamId })

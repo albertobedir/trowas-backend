@@ -1,4 +1,4 @@
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import User from "@/schemas/mongoose/User";
 import SubTeam from "@/schemas/mongoose/SubTeam";
 import Template from "@/schemas/mongoose/Template";
@@ -21,11 +21,11 @@ export async function updateSubteamMembers(
     if (!targetUser || targetUser.team?.toString() !== parentTeamId) continue;
 
     subTeam.members = subTeam.members.filter(
-      (id) => id.toString() !== targetUserId,
+      (id: Types.ObjectId) => id.toString() !== targetUserId,
     );
 
     targetUser.subTeams = targetUser.subTeams.filter(
-      (id) => id.toString() !== subTeamId,
+      (id: Types.ObjectId) => id.toString() !== subTeamId,
     );
 
     if (typeof subTeam.permissions === "string") {
@@ -49,9 +49,9 @@ export async function updateSubteamMembers(
 
     if (Array.isArray(subTeam.templates)) {
       const filteredTemplates = targetUser.templates?.filter(
-        (templateId) =>
+        (templateId: Types.ObjectId) =>
           !subTeam.templates.some(
-            (subTemplateId) =>
+            (subTemplateId: Types.ObjectId) =>
               subTemplateId.toString() === templateId.toString(),
           ),
       );
@@ -60,7 +60,7 @@ export async function updateSubteamMembers(
         const template = await Template.findById(templateId);
         if (template && Array.isArray(template.members)) {
           template.members = template.members.filter(
-            (id) => id.toString() !== targetUserId,
+            (id: Types.ObjectId) => id.toString() !== targetUserId,
           );
           await template.save();
         }
@@ -78,11 +78,11 @@ export async function updateSubteamMembers(
     const targetUser = await User.findById(targetUserId);
     if (!targetUser || targetUser.team?.toString() !== parentTeamId) continue;
 
-    if (!subTeam.members.some((id) => id.toString() === targetUserId)) {
+    if (!subTeam.members.some((id: Types.ObjectId) => id.toString() === targetUserId)) {
       subTeam.members.push(targetUserId as unknown as typeof subTeam.members[0]);
     }
 
-    if (!targetUser.subTeams.some((id) => id.toString() === subTeamId)) {
+    if (!targetUser.subTeams.some((id: Types.ObjectId) => id.toString() === subTeamId)) {
       targetUser.subTeams.push(subTeamId as unknown as typeof targetUser.subTeams[0]);
     }
 
@@ -95,7 +95,7 @@ export async function updateSubteamMembers(
 
     if (Array.isArray(subTeam.templates) && subTeam.templates.length > 0) {
       const userTemplateSet = new Set(
-        (targetUser.templates || []).map((id) => id.toString()),
+        (targetUser.templates || []).map((id: Types.ObjectId) => id.toString()),
       );
 
       for (const templateId of subTeam.templates) {
@@ -104,7 +104,7 @@ export async function updateSubteamMembers(
         if (template) {
           template.members = template.members || [];
           if (
-            !template.members.some((id) => id.toString() === targetUserId)
+            !template.members.some((id: Types.ObjectId) => id.toString() === targetUserId)
           ) {
             template.members.push(targetUserId as unknown as typeof template.members[0]);
             await template.save();

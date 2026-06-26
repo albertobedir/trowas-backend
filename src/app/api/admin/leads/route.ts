@@ -14,6 +14,7 @@ import {
   extractLeadTitle,
   normalizeLeadData,
 } from "@/lib/admin/lead-utils";
+import { AdminTeamLean } from "@/lib/admin/mongoose-lean-types";
 
 export async function GET(req: Request) {
   const authError = await requireAdmin(req);
@@ -122,10 +123,10 @@ export async function GET(req: Request) {
       ),
     ];
 
-    const teams = teamIds.length
-      ? await Team.find({ _id: { $in: teamIds } })
+    const teams: AdminTeamLean[] = teamIds.length
+      ? ((await Team.find({ _id: { $in: teamIds } })
           .select("name")
-          .lean()
+          .lean()) as unknown as AdminTeamLean[])
       : [];
 
     const teamNameById = new Map(

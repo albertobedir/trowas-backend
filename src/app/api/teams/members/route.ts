@@ -8,6 +8,7 @@ import { getUserIdFromToken } from "@/utils/decorators/id-decorator";
 import { isValidObjectId } from "mongoose";
 import SubTeam from "@/schemas/mongoose/SubTeam";
 import UserCard from "@/schemas/mongoose/UserCard";
+import { UserCardCoverLean } from "@/lib/admin/mongoose-lean-types";
 
 export async function GET(req: Request) {
   try {
@@ -52,9 +53,11 @@ export async function GET(req: Request) {
       .map((member) => member.userCard?.[0]?.cardId)
       .filter((cardId) => cardId && isValidObjectId(cardId));
 
-    const userCards = await UserCard.find({ _id: { $in: cardIds } })
+    const userCards: UserCardCoverLean[] = (await UserCard.find({
+      _id: { $in: cardIds },
+    })
       .select("coverPhoto")
-      .lean();
+      .lean()) as unknown as UserCardCoverLean[];
 
     const coverPhotoByCardId = new Map(
       userCards.map((card) => [card._id.toString(), card.coverPhoto]),

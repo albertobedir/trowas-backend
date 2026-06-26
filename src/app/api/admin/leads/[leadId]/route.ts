@@ -12,6 +12,10 @@ import {
   extractLeadTitle,
   normalizeLeadData,
 } from "@/lib/admin/lead-utils";
+import {
+  AdminLeadLean,
+  AdminTeamLean,
+} from "@/lib/admin/mongoose-lean-types";
 
 type RouteContext = { params: Promise<{ leadId: string }> };
 
@@ -27,14 +31,14 @@ export async function GET(req: Request, { params }: RouteContext) {
 
     await dbConnect();
 
-    const lead = await Lead.findById(leadId).lean();
+    const lead = await Lead.findById(leadId).lean<AdminLeadLean>();
     if (!lead) {
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
     const leadData = normalizeLeadData(lead.leadData);
     const team = lead.teamId
-      ? await Team.findById(lead.teamId).select("name owner").lean()
+      ? await Team.findById(lead.teamId).select("name owner").lean<AdminTeamLean>()
       : null;
 
     return NextResponse.json({

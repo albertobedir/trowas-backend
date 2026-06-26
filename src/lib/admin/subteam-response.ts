@@ -2,13 +2,17 @@
 
 import SubTeam from "@/schemas/mongoose/SubTeam";
 import User from "@/schemas/mongoose/User";
+import {
+  AdminSubTeamLean,
+  AdminUserLean,
+} from "@/lib/admin/mongoose-lean-types";
 
 export async function buildAdminSubteamResponse(subTeamId: string) {
   const subteam = await SubTeam.findById(subTeamId)
     .populate("owner", "name email profileImage username")
     .populate("parentTeam", "name")
     .populate("admins", "name email profileImage username")
-    .lean();
+    .lean<AdminSubTeamLean>();
 
   if (!subteam) return null;
 
@@ -23,17 +27,17 @@ export async function buildAdminSubteamResponse(subTeamId: string) {
 
   const [members, teamUsers] = await Promise.all([
     subteam.members?.length
-      ? User.find({ _id: { $in: subteam.members } })
+      ? ((await User.find({ _id: { $in: subteam.members } })
           .select("name email username profileImage roles.teamRole createdAt")
           .sort({ name: 1 })
-          .lean()
-      : Promise.resolve([]),
+          .lean()) as unknown as AdminUserLean[])
+      : ([] as AdminUserLean[]),
     parentTeamId
-      ? User.find({ team: parentTeamId })
+      ? ((await User.find({ team: parentTeamId })
           .select("name email username profileImage roles.teamRole createdAt")
           .sort({ name: 1 })
-          .lean()
-      : Promise.resolve([]),
+          .lean()) as unknown as AdminUserLean[])
+      : ([] as AdminUserLean[]),
   ]);
 
   const availableMembers = teamUsers.filter(
